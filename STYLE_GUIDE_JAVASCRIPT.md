@@ -565,15 +565,101 @@ proceeding.
 
 ## State Management
 
-- Local React state (`useState`) is the default for component-level state.
-- State lives in feature-level components.
-- **No external state management library is standardized yet.** When a project
-  outgrows local state (e.g., prop-drilling through 3+ levels, duplicating
-  fetch logic across components), evaluate lightweight options like Zustand or
-  Jotai and update this guide with the chosen standard.
+### Principles
 
-> **TODO:** Evaluate and standardize a state management library when the need
-> arises in a real project.
+- **Local state is the default.** Use `useState` for state that is read and
+  written within the same component or passed to a direct child. Reach for
+  shared state management when a second unrelated component needs the same
+  state, or when a prop passes through a component that does not use it.
+
+### Server State — TanStack Query
+
+- **TanStack Query manages all server-originated data.** Any state that is
+  fetched from, synchronized with, or mutated on the API is server state.
+  TanStack Query handles caching, refetching, deduplication, and
+  loading/error states so components do not manage this manually.
+
+- Do not use `useEffect` + `useState` for API data fetching. This is the
+  pattern TanStack Query replaces:
+
+  ```tsx
+  // ✗ Avoid — manual fetch with useEffect
+  const [game, setGame] = useState<GameState | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    fetch(`/game/${id}`)
+      .then((res) => res.json())
+      .then(setGame)
+      .catch(setError)
+      .finally(() => setIsLoading(false));
+  }, [id]);
+
+  // ✓ Preferred — TanStack Query
+  const { data: game, isLoading, error } = useQuery({
+    queryKey: ['game', id],
+    queryFn: () => fetch(`/game/${id}`).then((res) => res.json()),
+  });
+  ```
+
+- **Mutations use `useMutation`** with cache invalidation to keep the UI
+  in sync with the server after writes.
+
+### Client State — Zustand
+
+- **Zustand manages client-side state shared across unrelated components.**
+  This includes UI state that multiple components need but that does not
+  originate from the server — active selections, modal visibility driven
+  by non-parent components, user preferences, or transient interaction state.
+
+- Stores are **small and domain-scoped.** Do not create a single global store.
+  Each store owns one logical slice of state:
+
+  ```ts
+  // stores/useGameUIStore.ts
+  import { create } from 'zustand';
+
+  interface GameUIState {
+    selectedCell: { x: number; y: number } | null;
+    selectCell: (cell: { x: number; y: number }) => void;
+    clearSelection: () => void;
+  }
+
+  export const useGameUIStore = create<GameUIState>((set) => ({
+    selectedCell: null,
+    selectCell: (cell) => set({ selectedCell: cell }),
+    clearSelection: () => set({ selectedCell: null }),
+  }));
+  ```
+
+- **Components subscribe to slices, not the whole store.** Use selectors to
+  avoid unnecessary re-renders:
+
+  ```tsx
+  // ✓ Preferred — subscribes only to selectedCell
+  const selectedCell = useGameUIStore((state) => state.selectedCell);
+
+  // ✗ Avoid — subscribes to entire store, re-renders on any change
+  const store = useGameUIStore();
+  ```
+
+- Store files live alongside the feature that owns them. Only promote to a
+  shared `stores/` directory when the store is consumed by multiple unrelated
+  features. This follows the same co-location principle as hooks.
+
+### Choosing the Right Tool
+
+| Situation | Tool |
+|-----------|------|
+| State used by a single component | `useState` |
+| State passed to a direct child | Props |
+| Data fetched from the API | TanStack Query |
+| Client state shared across unrelated components | Zustand |
+| Transient form state | `useState` or a form library |
+
+If a state management need arises that does not fit these categories, flag it
+to the developer rather than introducing a new library.
 
 ---
 
