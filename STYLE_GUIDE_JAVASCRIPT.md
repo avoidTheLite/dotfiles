@@ -118,6 +118,10 @@
   import type { Express } from 'express';
   ```
 
+- **Named exports for all project code.** Default exports are used only when
+  required by an external API's contract (e.g., `React.lazy`). When importing
+  external libraries, use whatever export style the library provides.
+
 - **Use Zod for runtime validation at API boundaries.** TypeScript types
   are erased at runtime. Request bodies must be validated before use. Zod
   parses and validates in one step and infers the TypeScript type from the
@@ -309,8 +313,6 @@
   };
   ```
 
-- **Default exports** for feature components. Shared UI primitives (e.g.,
-  shadcn/ui components in `components/ui/`) use **named exports**.
 - No `React.FC<Props>` type annotation — type via the arrow function signature.
 - `App.tsx` should be intentionally thin — render top-level feature components
   and delegate all logic to feature folders.
@@ -435,9 +437,6 @@ apps/web/
 - After pulling, normalize the component to match project conventions: verify
   import paths, confirm the `cn()` helper location, and ensure the component
   uses the project's CSS custom property tokens.
-- shadcn components use **named exports**. This is an exception to the
-  default-export convention — shared UI primitives use named exports; feature
-  components use default exports.
 - When upstream shadcn updates are available, diff and merge rather than
   re-pulling. Review changes against project customizations before applying.
 - If a needed component is not available in shadcn, build it following the
