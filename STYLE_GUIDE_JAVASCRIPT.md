@@ -122,6 +122,26 @@
   required by an external API's contract (e.g., `React.lazy`). When importing
   external libraries, use whatever export style the library provides.
 
+- **Explicit return types on all exported functions; infer everywhere else.**
+  Exported functions are package contracts — an explicit return type makes the
+  contract visible, produces better error messages at call sites, and prevents
+  accidental API changes from propagating silently. Internal functions benefit
+  from inference, which keeps types narrower and reduces annotation noise.
+  This applies uniformly to utility functions, hooks, components, and any
+  other exported constant that is a function.
+
+  ```ts
+  // Exported — explicit return type (package contract)
+  export const createLogger = (context: { module: string }): pino.Logger => {
+    return pino().child(context);
+  };
+
+  // Internal — inferred return type
+  const formatContext = (module: string) => {
+    return { module, timestamp: Date.now() };
+  };
+  ```
+
 - **Use Zod for runtime validation at API boundaries.** TypeScript types
   are erased at runtime. Request bodies must be validated before use. Zod
   parses and validates in one step and infers the TypeScript type from the
@@ -313,7 +333,10 @@
   };
   ```
 
-- No `React.FC<Props>` type annotation — type via the arrow function signature.
+- No `React.FC<Props>` type annotation — type props via the arrow function
+  parameter. Exported components use `React.JSX.Element` (or
+  `React.JSX.Element | null`) as their explicit return type per the
+  [General TypeScript Rules](#general-typescript-rules).
 - `App.tsx` should be intentionally thin — render top-level feature components
   and delegate all logic to feature folders.
 - Use fragments (`<>...</>`) to avoid unnecessary wrapper elements.
