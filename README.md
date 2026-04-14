@@ -2,13 +2,24 @@
 
 This repository is the single source of truth for your development environment across Windows (with WSL2), macOS, and Linux.
 
-`STYLE_GUIDE_JAVASCRIPT.md` is immutable input and the source of truth for all formatting and linting decisions.
+TypeScript formatting and linting decisions live under **`guides/`** (role-first:
+`monorepo/`, `server/`, `client/`, then language). Start at
+[guides/INDEX.md](guides/INDEX.md); the root [STYLE_GUIDE_JAVASCRIPT.md](STYLE_GUIDE_JAVASCRIPT.md)
+file is a short index into those guides.
 
 ## Repository layout
 
 ```text
 dotfiles/
-├── STYLE_GUIDE_JAVASCRIPT.md
+├── STYLE_GUIDE_JAVASCRIPT.md   # pointer into guides/ (TypeScript)
+├── guides/
+│   ├── INDEX.md
+│   ├── manifest.json
+│   ├── monorepo/typescript/STYLE_GUIDE.md
+│   ├── server/typescript/STYLE_GUIDE.md
+│   ├── server/python/STYLE_GUIDE.md
+│   ├── client/typescript/STYLE_GUIDE.md
+│   └── client/python/STYLE_GUIDE.md
 ├── README.md
 ├── scripts/
 │   ├── install.sh
@@ -84,7 +95,7 @@ If you need to freeze a project, copy the resolved config into the project itsel
 
 ## Style guide gaps that were flagged
 
-These values were not explicitly defined in `STYLE_GUIDE_JAVASCRIPT.md` and were confirmed during setup:
+These values were not explicitly defined in the style guides under `guides/` (see [monorepo/typescript/STYLE_GUIDE.md](guides/monorepo/typescript/STYLE_GUIDE.md)) and were confirmed during setup:
 
 - Node version pinned to `22`
 - Tab width pinned to `2`

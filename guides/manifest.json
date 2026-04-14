@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "Style and convention guides. Only includes files that exist in the repo. Top-level roles: monorepo, server, client; languages under each.",
+  "default_full_stack_typescript": [
+    "ts.monorepo",
+    "ts.server",
+    "ts.client"
+  ],
+  "guides": [
+    {
+      "id": "ts.monorepo",
+      "path": "guides/monorepo/typescript/STYLE_GUIDE.md",
+      "language": "typescript",
+      "role": "monorepo",
+      "pillar": "application",
+      "domains": ["monorepo", "tooling"],
+      "tooling": ["node", "typescript", "eslint", "prettier", "vitest", "pnpm", "turborepo", "knex"]
+    },
+    {
+      "id": "ts.server",
+      "path": "guides/server/typescript/STYLE_GUIDE.md",
+      "language": "typescript",
+      "role": "server",
+      "pillar": "application",
+      "domains": ["api", "express", "logging", "database"],
+      "prerequisites": ["ts.monorepo"],
+      "tooling": ["express", "pino", "zod", "knex"]
+    },
+    {
+      "id": "ts.client",
+      "path": "guides/client/typescript/STYLE_GUIDE.md",
+      "language": "typescript",
+      "role": "client",
+      "pillar": "application",
+      "domains": ["react", "tailwind", "tanstack-query", "zustand"],
+      "prerequisites": ["ts.monorepo"],
+      "tooling": ["react", "vitest", "msw", "testing-library", "tailwind"]
+    },
+    {
+      "id": "py.server",
+      "path": "guides/server/python/STYLE_GUIDE.md",
+      "language": "python",
+      "role": "server",
+      "pillar": "application",
+      "domains": ["api", "logging", "database"],
+      "prerequisites": ["ts.monorepo"],
+      "tooling": [],
+      "note": "Conceptual map from TypeScript server guide; pin Python stack when authoring."
+    },
+    {
+      "id": "py.client",
+      "path": "guides/client/python/STYLE_GUIDE.md",
+      "language": "python",
+      "role": "client",
+      "pillar": "application",
+      "domains": ["ui"],
+      "prerequisites": ["ts.monorepo"],
+      "tooling": [],
+      "note": "Section slots mirror TypeScript client; choose UI stack before expanding."
+    }
+  ]
+}
