@@ -2,27 +2,36 @@
 
 These documents target **full-stack monorepo** applications (shared packages, `apps/api`, `apps/web`, polyglot services). Layout is **role first** (`monorepo` / `server` / `client`), then **language** — the same tree works for TypeScript and Python.
 
-Read **TypeScript (monorepo)** before any other TypeScript guide; stack-specific guides add rules on top.
+Read **TypeScript (monorepo)** before any other TypeScript guide; stack-specific guides add rules on top. Read **Python (monorepo)** before any other Python guide.
 
 ## Monorepo
 
 | Guide | Use when |
 |--------|-----------|
 | [TypeScript](monorepo/typescript/STYLE_GUIDE.md) | ESM, `tsconfig`, ESLint/Prettier, editor, Vitest (server + client packages), DB test infra, pnpm, Turborepo, repo layout |
+| [Python](monorepo/python/STYLE_GUIDE.md) | Python 3.13, uv, Ruff, Pyright strict, Pydantic at boundaries, OpenAPI SSOT, pytest + Hypothesis, Turborepo task wiring for Python, repo layout |
 
 ## Server
 
 | Guide | Use when |
 |--------|-----------|
-| [TypeScript](server/typescript/STYLE_GUIDE.md) | `apps/api`, Express, Pino, errors, Zod env, Knex |
-| [Python](server/python/STYLE_GUIDE.md) | APIs, workers, ORM, logging — **section map** to TypeScript server; fill tooling as you standardize |
+| [TypeScript](server/typescript/STYLE_GUIDE.md) | **Standalone** `apps/api`, Express, Pino, errors, Zod env, Knex; **mutually exclusive** with Python server for the same HTTP surface |
+| [Python](server/python/STYLE_GUIDE.md) | **Standalone** FastAPI/server stack; **mutually exclusive** with TypeScript server for the same API; baseline in [Python (monorepo)](monorepo/python/STYLE_GUIDE.md) |
 
 ## Client
 
 | Guide | Use when |
 |--------|-----------|
 | [TypeScript](client/typescript/STYLE_GUIDE.md) | `apps/web`, React, Tailwind, TanStack Query, Zustand, RTL, MSW |
-| [Python](client/python/STYLE_GUIDE.md) | Browser or desktop UI in Python — **section map** to TypeScript client; add stack when chosen |
+| [Python](client/python/STYLE_GUIDE.md) | Browser or desktop UI in Python — **section map** to TypeScript client; defers shared Python rules to [Python (monorepo)](monorepo/python/STYLE_GUIDE.md) |
+
+## Other Python domains (stubs)
+
+| Guide | Use when |
+|--------|-----------|
+| [Python (AI)](ai/python/STYLE_GUIDE.md) | Agents, CrewAI / LangGraph — placeholder; links to Python (monorepo) |
+| [Python (CLI)](cli/python/STYLE_GUIDE.md) | Typer CLIs — placeholder; links to Python (monorepo) |
+| [Python (data)](data/python/STYLE_GUIDE.md) | Polars / ETL — placeholder; links to Python (monorepo) |
 
 ## Versioning
 
