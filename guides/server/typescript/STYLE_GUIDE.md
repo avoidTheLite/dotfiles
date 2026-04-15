@@ -7,8 +7,27 @@
 
 ---
 
+## Scope (one API, one stack)
+
+- **Mutual exclusivity:** For a **given HTTP API** (one public service boundary),
+  treat **either** this guide **or**
+  [Python (server)](../python/STYLE_GUIDE.md) as the **implementation**
+  authority — not both at once for the **same** routes. If you intentionally
+  split traffic (gateway, BFF, strangler), document that architecture separately;
+  each hop still picks **one** language’s server guide for its own code.
+- **This document** is the **standalone** convention set for **Node.js 22 +
+  Express 5.x** APIs. It does not assume you read the Python server guide.
+- **Polyglot repository:** Other services may be written in Python; **HTTP
+  contracts** across languages follow the **OpenAPI** rules in
+  [Python (monorepo) — OpenAPI](../../monorepo/python/STYLE_GUIDE.md#openapi-as-single-source-of-truth)
+  when the spec is the shared artifact. **Zod-at-boundaries** below applies to
+  **this** Express app’s own request handlers only.
+
+---
+
 ## Table of Contents
 
+- [Scope (one API, one stack)](#scope-one-api-one-stack)
 - [Testing (server packages)](#testing-server-packages)
 - [Node / Server Conventions](#node--server-conventions)
 
@@ -316,5 +335,16 @@ Pino's log levels, in order of severity:
 
 - Knex with PostgreSQL in production; SQLite3 in test environment.
 - Migrations and seeds managed via Knex CLI.
+
+---
+
+## Related guides
+
+- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md)
+- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) — OpenAPI SSOT and
+  Python tooling when the repo also ships FastAPI services
+- [Python (server)](../python/STYLE_GUIDE.md) — **alternative** stack for
+  Python-backed APIs (not combined with this guide for the same surface)
+- [TypeScript (client)](../../client/typescript/STYLE_GUIDE.md)
 
 ---

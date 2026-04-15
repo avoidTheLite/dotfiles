@@ -411,6 +411,7 @@ project-root/
 
 ## Related guides
 
+- **Python (monorepo)** — [python/STYLE_GUIDE.md](../python/STYLE_GUIDE.md)
 - **Server (TypeScript)** — [server/typescript/STYLE_GUIDE.md](../../server/typescript/STYLE_GUIDE.md)
 - **Client (TypeScript)** — [client/typescript/STYLE_GUIDE.md](../../client/typescript/STYLE_GUIDE.md)
 - **Server (Python)** — [server/python/STYLE_GUIDE.md](../../server/python/STYLE_GUIDE.md)

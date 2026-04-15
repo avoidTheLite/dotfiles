@@ -4,7 +4,12 @@
 > PyScript, Qt with Python). This repo’s primary path is **TypeScript React** in
 > `apps/web`; add depth here once you choose a Python UI stack.
 >
-> Until then, use this file as a **section map** aligned to
+> **Shared Python rules** (Python 3.13, uv, Ruff, Pyright strict, Pydantic at
+> boundaries, pytest, OpenAPI where APIs are touched) live in
+> [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md). Read that guide
+> first for any Python package in the monorepo.
+>
+> Until this file is expanded, use it as a **section map** aligned to
 > [TypeScript (client)](../typescript/STYLE_GUIDE.md) so tooling and agents know
 > where conventions will live.
 
@@ -25,6 +30,14 @@ touching Python.
 
 ---
 
+## Topics owned by Python (monorepo) guide
+
+**uv**, **Ruff**, **Pyright strict**, **Pydantic** contract rules, **pytest** /
+**pytest-cov** / **Hypothesis**, **OpenAPI** workflow, **Turborepo** task wiring
+for Python, and **folder layout** are defined in
+[monorepo/python/STYLE_GUIDE.md](../../monorepo/python/STYLE_GUIDE.md). Do not
+duplicate them here.
+
 ## Topics owned by TypeScript (monorepo) guide
 
 Vitest **client** config, shared `packages/types`, and ESLint/Prettier are
@@ -37,6 +50,7 @@ and **no meaningless barrel files** — mirror the spirit of the TypeScript mono
 
 ## Related guides
 
+- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md)
 - [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md)
 - [TypeScript (client)](../typescript/STYLE_GUIDE.md)
 - [Python (server)](../../server/python/STYLE_GUIDE.md)
