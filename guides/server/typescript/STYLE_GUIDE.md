@@ -1,5 +1,15 @@
 # Style Guide — TypeScript (server)
 
+<!-- quickref
+framework: express 5.x
+node-version: 22
+logger: pino
+validation: zod
+database: knex (postgresql / sqlite3)
+error-handling: centralized middleware
+env-config: zod-validated process.env
+-->
+
 > **`apps/api` and Node HTTP services.** Read
 > [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) first — it
 > covers ESM, `tsconfig`, ESLint/Prettier, Vitest basics, pnpm, Turborepo, and the
@@ -80,20 +90,20 @@ and
 
 - `bodyParser.json()` is applied **per-router**, not globally.
 - `cors()` is applied globally in `app.ts`.
-- Request logging middleware from `@battleship/util` applied globally.
+- Request logging middleware from `@<project>/util` applied globally.
 - `errorHandler` is registered **last** in `app.ts` (see [Error Handling](#error-handling)).
 
 ### Logging
 
 - **Pino is the standard logger.** All application logging uses Pino via
-  a thin wrapper in `@battleship/util`. Do not use `console.log` in
+  a thin wrapper in `@<project>/util`. Do not use `console.log` in
   application code.
 
 - The wrapper centralizes Pino instantiation and default context. App code
   gets a real Pino logger instance back:
 
   ```ts
-  // @battleship/util — createLogger wrapper
+  // @<project>/util — createLogger wrapper
   import pino from 'pino';
 
   export const createLogger = (context: { module: string; level?: string }) => {
@@ -104,7 +114,7 @@ and
 
   ```ts
   // Usage in application code
-  import { createLogger } from '@battleship/util';
+  import { createLogger } from '@<project>/util';
   import { env } from './config.ts';
 
   const logger = createLogger({ module: 'gameController', level: env.LOG_LEVEL });
@@ -190,12 +200,12 @@ Pino's log levels, in order of severity:
 
 #### Custom Error Classes
 
-- Custom error classes live in `@battleship/types` and extend a base
+- Custom error classes live in `@<project>/types` and extend a base
   `AppError` class. Each error carries a `statusCode` that the error
   handler uses to set the HTTP response:
 
   ```ts
-  // @battleship/types — errors.ts
+  // @<project>/types — errors.ts
   export class AppError extends Error {
     public readonly statusCode: number;
     public readonly isOperational: boolean;
@@ -240,12 +250,12 @@ Pino's log levels, in order of severity:
 
 #### Centralized Error Handler
 
-- A single error-handling middleware in `@battleship/util` handles all errors.
+- A single error-handling middleware in `@<project>/util` handles all errors.
   It is registered **last** in `app.ts`:
 
   ```ts
-  // @battleship/util — errorHandler.ts
-  import { AppError } from '@battleship/types';
+  // @<project>/util — errorHandler.ts
+  import { AppError } from '@<project>/types';
   import { createLogger } from './logger.ts';
 
   const logger = createLogger({ module: 'errorHandler' });
@@ -265,7 +275,7 @@ Pino's log levels, in order of severity:
 
   ```ts
   // app.ts
-  import { errorHandler } from '@battleship/util';
+  import { errorHandler } from '@<project>/util';
 
   // ... routes mounted above
   app.use(errorHandler); // must be last
@@ -277,7 +287,7 @@ Pino's log levels, in order of severity:
   `ValidationError` so it flows through the same error handler:
 
   ```ts
-  import { ValidationError } from '@battleship/types';
+  import { ValidationError } from '@<project>/types';
 
   gameRouter.patch('/:id/deploy', (req, res) => {
     const result = DeployBody.safeParse(req.body);

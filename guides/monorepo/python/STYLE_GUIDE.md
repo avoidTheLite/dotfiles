@@ -1,5 +1,16 @@
 # Style Guide — Python (monorepo)
 
+<!-- quickref
+python-version: 3.13
+package-manager: uv
+linter-formatter: ruff
+type-checker: pyright (strict)
+validation: pydantic
+test-runner: pytest
+property-testing: hypothesis
+api-contract: openapi
+-->
+
 > Applies to **all** Python packages in a polyglot monorepo (`apps/*`, `packages/*`
 > Python services and libraries) alongside the TypeScript stack. Read this guide
 > before any **Python** server, client, or domain-specific Python guide.

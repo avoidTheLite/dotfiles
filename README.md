@@ -23,7 +23,8 @@ dotfiles/
 ├── README.md
 ├── scripts/
 │   ├── install.sh
-│   └── init-project.sh
+│   ├── init-project.sh
+│   └── init-monorepo.sh
 ├── vscode/
 │   ├── settings.json
 │   └── extensions.txt
@@ -33,14 +34,28 @@ dotfiles/
 │   └── eslint.base.js
 ├── prettier/
 │   └── prettier.base.js
-└── project-template/
+├── project-template/              # single-package scaffold
+│   ├── .devcontainer/
+│   │   └── devcontainer.json
+│   ├── .vscode/
+│   │   └── settings.json
+│   ├── eslint.config.js
+│   ├── .prettierrc.js
+│   └── .gitignore
+└── project-template-monorepo/     # full-stack monorepo scaffold
     ├── .devcontainer/
     │   └── devcontainer.json
     ├── .vscode/
     │   └── settings.json
     ├── eslint.config.js
     ├── .prettierrc.js
-    └── .gitignore
+    ├── .gitignore
+    ├── package.json
+    ├── pnpm-workspace.yaml
+    ├── turbo.json
+    └── packages/tsconfig/
+        ├── package.json
+        └── base.json
 ```
 
 ## One-time machine setup
@@ -66,6 +81,16 @@ sh ~/dotfiles/scripts/init-project.sh my-project
 ```
 
 This creates `./my-project` from `~/dotfiles/project-template`, replaces `__PROJECT_NAME__` placeholders, and prints next steps.
+
+## Scaffold a monorepo
+
+For a full-stack monorepo (pnpm workspaces + Turborepo + shared tsconfig):
+
+```sh
+sh ~/dotfiles/scripts/init-monorepo.sh my-project
+```
+
+This creates `./my-project` from `~/dotfiles/project-template-monorepo`, substitutes placeholders, initializes a git repo on `main`, and commits the scaffold.
 
 ## Updating base configs
 

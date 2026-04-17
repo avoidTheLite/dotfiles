@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build and coverage output
+dist/
+coverage/
+
+# environment files
+.env
+.env.*
+.env.local
+
+# turborepo
+.turbo/
+*.tsbuildinfo
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json

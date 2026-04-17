@@ -1,0 +1,13 @@
+{
+  "name": "__PROJECT_NAME__-node22",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "postCreateCommand": "pnpm install"
+}

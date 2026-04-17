@@ -1,0 +1,17 @@
+{
+  "name": "__PROJECT_NAME__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3",
+    "turbo": "^2"
+  },
+  "packageManager": "pnpm@10"
+}

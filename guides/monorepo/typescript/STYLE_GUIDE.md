@@ -1,9 +1,25 @@
 # Style Guide — TypeScript (monorepo)
 
+<!-- quickref
+package-manager: pnpm
+workspace-orchestrator: turborepo
+test-runner: vitest
+node-version: 22
+target: ES2022
+module-system: ESM (NodeNext)
+strict-mode: true
+linter: eslint (flat config)
+formatter: prettier
+editor: vscode / cursor
+-->
+
 > Applies to **all** TypeScript packages in the full-stack monorepo
 > (`apps/api`, `apps/web`, `packages/*`). Source is `.ts` / `.tsx` on **Node.js**
 > with ESM. For server-only or client-only rules, read the companion guides linked
 > at the end.
+>
+> **Placeholder convention:** Examples use `@<project>/` as the npm scope.
+> Replace `<project>` with your actual project name (e.g. `@acme/types`).
 
 ---
 
@@ -78,7 +94,7 @@
     packages but does not emit JavaScript (bundlers or the runtime handle that).
     App packages that nothing imports from may override to `noEmit: true`, as may
     types-only shared packages consumed within the monorepo via source exports
-    (for example `@battleship/types`).
+    (for example `@<project>/types`).
   - `allowImportingTsExtensions: true`
   - `jsx: react-jsx` — set in base for forward compatibility
 
@@ -112,7 +128,7 @@
 - **Type location follows a three-tier rule** (see also
   [Shared Types Package](#shared-types-package)):
 
-  - **Domain types live in `@battleship/types`.** Interfaces representing
+  - **Domain types live in `@<project>/types`.** Interfaces representing
     domain entities, API request/response shapes, and Zod schemas belong in
     the shared types package regardless of how many files currently import
     them.
@@ -120,7 +136,7 @@
     specialize domain types for a single package's needs — but are shared
     across multiple files within that package — belong in a single `types.ts`
     file at the package's `src/` root. This file must import and extend from
-    `@battleship/types`, not redefine domain shapes.
+    `@<project>/types`, not redefine domain shapes.
   - **Implementation-private types stay inline.** Component state shapes,
     local helper parameters, and types used only within a single module are
     declared close to their point of use.
@@ -164,7 +180,7 @@
 
   ```ts
   import { z } from 'zod';
-  import { ValidationError } from '@battleship/types';
+  import { ValidationError } from '@<project>/types';
 
   const DeployBody = z.object({
     positions: z.array(z.object({ x: z.number(), y: z.number() })),
@@ -182,7 +198,7 @@
 
 ### Shared Types Package
 
-- **Shared types live in `packages/types` (`@battleship/types`)** — exports
+- **Shared types live in `packages/types` (`@<project>/types`)** — exports
   interfaces, Zod schemas, and custom error classes shared between `apps/api`
   and any future client package.
 
@@ -217,8 +233,8 @@
 
   ```js
   // eslint.config.js
-  import battleshipConfig from '@battleship/eslint-config';
-  export default [...battleshipConfig];
+  import projectConfig from '@<project>/eslint-config';
+  export default [...projectConfig];
   ```
 
 ### Prettier
@@ -348,7 +364,7 @@
 ```
 project-root/
 ├── apps/
-│   ├── api/               # @battleship/api — Node server
+│   ├── api/               # @<project>/api — Node server
 │   │   ├── vitest.config.ts
 │   │   └── src/
 │   │       ├── app.ts
@@ -365,7 +381,7 @@ project-root/
 │   │       │   └── services/
 │   │       ├── common/
 │   │       └── db/
-│   └── web/               # @battleship/web — React client
+│   └── web/               # @<project>/web — React client
 │       ├── vitest.config.ts
 │       ├── index.html
 │       └── src/
@@ -380,16 +396,16 @@ project-root/
 │           ├── hooks/               # shared hooks only
 │           └── mocks/               # MSW handlers
 ├── packages/
-│   ├── util/              # @battleship/util — logger, error handler, middleware
+│   ├── util/              # @<project>/util — logger, error handler, middleware
 │   │   └── src/
 │   │       ├── logger.ts
 │   │       └── errorHandler.ts
-│   ├── types/             # @battleship/types — shared types, Zod schemas, errors
+│   ├── types/             # @<project>/types — shared types, Zod schemas, errors
 │   │   └── src/
 │   │       ├── game.ts
 │   │       ├── api.ts
 │   │       └── errors.ts
-│   ├── tsconfig/          # @battleship/tsconfig — shared TS config
+│   ├── tsconfig/          # @<project>/tsconfig — shared TS config
 │   └── eslint-config/     # shared ESLint config
 ├── turbo.json
 ├── pnpm-workspace.yaml

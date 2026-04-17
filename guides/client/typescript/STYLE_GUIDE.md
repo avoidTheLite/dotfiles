@@ -1,9 +1,20 @@
 # Style Guide — TypeScript (client)
 
+<!-- quickref
+framework: react 19
+bundler: vite 6
+styling: tailwindcss 4
+component-library: shadcn/ui
+state-server: tanstack-query
+state-client: zustand
+testing: vitest + react-testing-library + msw
+class-utility: clsx + tailwind-merge + cva
+-->
+
 > **`apps/web` and browser React packages.** Read
 > [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) first — it
 > covers ESM, `tsconfig`, ESLint/Prettier, Vitest, pnpm, Turborepo, and shared
-> types (`@battleship/types`).
+> types (shared `packages/types`).
 
 ---
 

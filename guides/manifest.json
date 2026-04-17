@@ -1,6 +1,22 @@
 {
-  "version": 3,
+  "version": 4,
   "description": "Style and convention guides. Only includes files that exist in the repo. Top-level roles: monorepo, server, client; languages under each.",
+  "defaults": {
+    "branch": "main",
+    "package_scope_placeholder": "__PROJECT_NAME__",
+    "dotfiles_path": "~/dotfiles"
+  },
+  "tooling_versions": {
+    "node": "22",
+    "pnpm": "10",
+    "typescript": "5",
+    "express": "5",
+    "react": "19",
+    "vite": "6",
+    "vitest": "3",
+    "tailwindcss": "4",
+    "python": "3.13"
+  },
   "default_full_stack_typescript": [
     "ts.monorepo",
     "ts.server",

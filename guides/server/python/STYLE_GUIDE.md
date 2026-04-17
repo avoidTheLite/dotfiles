@@ -1,5 +1,13 @@
 # Style Guide — Python (server)
 
+<!-- quickref
+framework: fastapi
+validation: pydantic
+logger: structlog
+database: sqlalchemy (async)
+test-runner: pytest
+-->
+
 > **HTTP APIs, workers, and data access** implemented in **Python** (FastAPI by
 > default). This guide is **standalone** for that stack: you can implement and
 > review a Python service using **this file plus**
