@@ -4,6 +4,7 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Split **general TypeScript and Python** into [guides/platform/typescript/STYLE_GUIDE.md](guides/platform/typescript/STYLE_GUIDE.md) and [guides/platform/python/STYLE_GUIDE.md](guides/platform/python/STYLE_GUIDE.md). The [monorepo](guides/monorepo/) guides now only cover **pnpm**, **Turborepo**, and top-level `apps/` / `packages/` layout. Updated the manifest to version 5, adjusted prerequisites (`ts.platform` / `py.platform` first), and refreshed cross-links across server, client, and stub guides.
 - Added a full validation pipeline: manifest checks, internal markdown link resolution, CHANGELOG structure, exception-marker format, optional local gitleaks, and a GitHub Actions workflow that enforces the same on push and on pull requests.
 - Added a per-repository branch name policy in `config/branch-standards.json` and a CI check that enforces the pattern for this dotfiles repo (topic branches: `feature/`, `fix/`, `chore/`, `docs/`, plus `dependabot/` for automation). Other projects can copy the file and edit the regular expression in one place.
 - Added new guides under `guides/platform/design/` (product and component principles for Shadcn-style UIs) and `guides/platform/infra/` (Terraform and OpenTofu compatible infrastructure conventions).

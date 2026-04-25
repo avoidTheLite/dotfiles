@@ -1,12 +1,13 @@
 {
-  "version": 4,
-  "description": "Style and convention guides. Only includes files that exist in the repo. Top-level roles: monorepo, server, client, platform (design and infra), validation (repo quality); languages under monorepo/server/client where applicable.",
+  "version": 5,
+  "description": "Style and convention guides. Platform = language baselines (TypeScript, Python) and design/infra. Monorepo = pnpm, Turborepo, workspace layout only. Roles: monorepo, server, client, platform, validation.",
   "default_full_stack_typescript": [
+    "ts.platform",
     "ts.monorepo",
     "ts.server",
     "ts.client"
   ],
-  "default_full_stack_python": ["py.monorepo", "py.server"],
+  "default_full_stack_python": ["py.platform", "py.monorepo", "py.server"],
   "default_validation": [
     "platform.design",
     "platform.components",
@@ -16,13 +17,34 @@
   ],
   "guides": [
     {
+      "id": "ts.platform",
+      "path": "guides/platform/typescript/STYLE_GUIDE.md",
+      "language": "typescript",
+      "role": "platform",
+      "pillar": "application",
+      "domains": ["typescript", "node", "eslint", "prettier", "vitest", "zod"],
+      "prerequisites": [],
+      "tooling": ["node", "typescript", "eslint", "prettier", "vitest", "zod", "knex"]
+    },
+    {
       "id": "ts.monorepo",
       "path": "guides/monorepo/typescript/STYLE_GUIDE.md",
       "language": "typescript",
       "role": "monorepo",
       "pillar": "application",
-      "domains": ["monorepo", "tooling"],
-      "tooling": ["node", "typescript", "eslint", "prettier", "vitest", "pnpm", "turborepo", "knex"]
+      "domains": ["monorepo", "pnpm", "turborepo", "workspaces"],
+      "prerequisites": ["ts.platform"],
+      "tooling": ["pnpm", "turborepo"]
+    },
+    {
+      "id": "py.platform",
+      "path": "guides/platform/python/STYLE_GUIDE.md",
+      "language": "python",
+      "role": "platform",
+      "pillar": "application",
+      "domains": ["python", "openapi", "uv", "ruff", "pyright", "pydantic", "pytest"],
+      "prerequisites": [],
+      "tooling": ["python", "uv", "ruff", "pyright", "pydantic", "pytest"]
     },
     {
       "id": "py.monorepo",
@@ -30,9 +52,9 @@
       "language": "python",
       "role": "monorepo",
       "pillar": "application",
-      "domains": ["monorepo", "tooling", "openapi"],
-      "prerequisites": ["ts.monorepo"],
-      "tooling": ["python", "uv", "ruff", "pyright", "pydantic", "pytest", "turborepo"]
+      "domains": ["monorepo", "polyglot", "turborepo"],
+      "prerequisites": ["py.platform", "ts.monorepo"],
+      "tooling": ["uv", "turborepo", "pnpm"]
     },
     {
       "id": "ts.server",
@@ -41,7 +63,7 @@
       "role": "server",
       "pillar": "application",
       "domains": ["api", "express", "logging", "database"],
-      "prerequisites": ["ts.monorepo"],
+      "prerequisites": ["ts.platform"],
       "tooling": ["express", "pino", "zod", "knex"]
     },
     {
@@ -51,7 +73,7 @@
       "role": "client",
       "pillar": "application",
       "domains": ["react", "tailwind", "tanstack-query", "zustand"],
-      "prerequisites": ["ts.monorepo"],
+      "prerequisites": ["ts.platform"],
       "tooling": ["react", "vitest", "msw", "testing-library", "tailwind"]
     },
     {
@@ -61,7 +83,7 @@
       "role": "server",
       "pillar": "application",
       "domains": ["api", "logging", "database"],
-      "prerequisites": ["py.monorepo"],
+      "prerequisites": ["py.platform"],
       "tooling": ["fastapi", "pydantic", "uv", "pytest"],
       "note": "Standalone FastAPI/server guide; mutually exclusive with ts.server for the same HTTP API."
     },
@@ -72,7 +94,7 @@
       "role": "client",
       "pillar": "application",
       "domains": ["ui"],
-      "prerequisites": ["py.monorepo", "ts.monorepo"],
+      "prerequisites": ["py.platform", "ts.platform"],
       "tooling": [],
       "note": "Section slots mirror TypeScript client; choose UI stack before expanding."
     },
@@ -83,7 +105,7 @@
       "role": "ai",
       "pillar": "application",
       "domains": ["agents", "llm"],
-      "prerequisites": ["py.monorepo"],
+      "prerequisites": ["py.platform"],
       "tooling": [],
       "note": "Stub; expand when AI packages land."
     },
@@ -94,7 +116,7 @@
       "role": "cli",
       "pillar": "application",
       "domains": ["cli"],
-      "prerequisites": ["py.monorepo"],
+      "prerequisites": ["py.platform"],
       "tooling": ["typer"],
       "note": "Stub; expand when CLI packages land."
     },
@@ -105,7 +127,7 @@
       "role": "data",
       "pillar": "application",
       "domains": ["etl", "analytics"],
-      "prerequisites": ["py.monorepo"],
+      "prerequisites": ["py.platform"],
       "tooling": ["polars"],
       "note": "Stub; expand when data pipelines land."
     },

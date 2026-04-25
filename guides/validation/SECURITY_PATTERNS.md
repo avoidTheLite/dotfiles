@@ -13,7 +13,8 @@
   prefer **linting of known bad patterns in committed prompts** and **separation of system and user
   content** in documented templates, not a single “AI firewall” in dotfiles.
 - For **LLM or agent** Python stacks, the [AI Python](../ai/python/STYLE_GUIDE.md) guide will be the
-  primary application-level home; this file will only point to shared validation hooks once they exist.
+  primary application-level home (after [Python (platform)](../platform/python/STYLE_GUIDE.md)); this file
+  will only point to shared validation hooks once they exist.
 
 ## Related
 

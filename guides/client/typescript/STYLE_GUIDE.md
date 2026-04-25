@@ -1,9 +1,10 @@
 # Style Guide — TypeScript (client)
 
 > **`apps/web` and browser React packages.** Read
-> [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) first — it
-> covers ESM, `tsconfig`, ESLint/Prettier, Vitest, pnpm, Turborepo, and shared
-> types (`@battleship/types`).
+> [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md) first for the **language** baseline
+> (ESM, `tsconfig`, ESLint/Prettier, Vitest, types). In a **Turborepo** workspace, also read
+> [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md). Shared types (`@battleship/types` or
+> equivalent) are defined in the **platform** guide.
 
 > **Product and design system** conventions (tokens, Shadcn-style `components/ui`, composition) live under
 > [platform design](../../platform/design/DESIGN.md) and

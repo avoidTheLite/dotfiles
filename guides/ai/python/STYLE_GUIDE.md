@@ -6,7 +6,8 @@
 
 All **shared** Python rules (uv, Ruff, Pyright strict, Pydantic at boundaries,
 pytest, OpenAPI where HTTP is involved) live in
-**[Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md)**. Read that guide first.
+**[Python (platform)](../../platform/python/STYLE_GUIDE.md)**. Read that guide first. If the repo is
+**polyglot Turborepo**, also read [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md).
 
 ---
 
@@ -20,6 +21,8 @@ pytest, OpenAPI where HTTP is involved) live in
 
 ## Related guides
 
-- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md)
+- [Python (platform)](../../platform/python/STYLE_GUIDE.md)
+- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) (polyglot Turbo only)
 - [Python (server)](../../server/python/STYLE_GUIDE.md)
-- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md)
+- [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md)
+- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) (polyglot only)

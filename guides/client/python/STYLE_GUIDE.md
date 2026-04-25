@@ -6,16 +6,18 @@
 >
 > **Shared Python rules** (Python 3.13, uv, Ruff, Pyright strict, Pydantic at
 > boundaries, pytest, OpenAPI where APIs are touched) live in
-> [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md). Read that guide
-> first for any Python package in the monorepo.
+> [Python (platform)](../../platform/python/STYLE_GUIDE.md). Read that guide
+> first. If the project uses **Turborepo** beside TypeScript, also read
+> [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) and
+> [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md).
 >
 > Until this file is expanded, use it as a **section map** aligned to
 > [TypeScript (client)](../typescript/STYLE_GUIDE.md) so tooling and agents know
 > where conventions will live.
 
-Read [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) for
-monorepo-wide TypeScript rules that may still apply to shared types or codegen
-touching Python.
+Read [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md) and, in a
+**workspace** repo, [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) for
+shared types, codegen, and pnpm layout that may touch Python.
 
 ---
 
@@ -30,27 +32,30 @@ touching Python.
 
 ---
 
-## Topics owned by Python (monorepo) guide
+## Topics owned by Python (platform) guide
 
 **uv**, **Ruff**, **Pyright strict**, **Pydantic** contract rules, **pytest** /
-**pytest-cov** / **Hypothesis**, **OpenAPI** workflow, **Turborepo** task wiring
-for Python, and **folder layout** are defined in
-[monorepo/python/STYLE_GUIDE.md](../../monorepo/python/STYLE_GUIDE.md). Do not
-duplicate them here.
+**pytest-cov** / **Hypothesis**, **OpenAPI** workflow, and **folder layout within a
+package** are defined in [platform/python/STYLE_GUIDE.md](../../platform/python/STYLE_GUIDE.md). **Turbo
+task wiring** for Python in a polyglot monorepo is in
+[monorepo/python/STYLE_GUIDE.md](../../monorepo/python/STYLE_GUIDE.md). Do not duplicate them here.
 
-## Topics owned by TypeScript (monorepo) guide
+## Topics owned by TypeScript (platform) / (monorepo) guides
 
 Vitest **client** config, shared `packages/types`, and ESLint/Prettier are
-covered under [monorepo/typescript/STYLE_GUIDE.md](../../monorepo/typescript/STYLE_GUIDE.md). Python
+covered under [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md) and, for workspaces,
+[TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md). Python
 client packages should still follow **feature folders**, **co-located tests**,
-and **no meaningless barrel files** — mirror the spirit of the TypeScript monorepo guide in
+and **no meaningless barrel files** — mirror the spirit of those guides in
 `pyproject.toml` / Ruff / pytest layout when you add them.
 
 ---
 
 ## Related guides
 
-- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md)
+- [Python (platform)](../../platform/python/STYLE_GUIDE.md)
+- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) (polyglot Turbo)
+- [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md)
 - [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md)
 - [TypeScript (client)](../typescript/STYLE_GUIDE.md)
 - [Python (server)](../../server/python/STYLE_GUIDE.md)

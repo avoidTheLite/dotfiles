@@ -3,9 +3,11 @@
 This repository is the single source of truth for your development environment across Windows (with WSL2), macOS, and Linux.
 
 Style and quality decisions live under **`guides/`** (role-first: `monorepo/`, `server/`, `client/`, then
-language, plus `platform/` for design and infrastructure and `validation/` for branch, a11y, and privacy
-rules). Start at [guides/INDEX.md](guides/INDEX.md). The [CHANGELOG](CHANGELOG.md) is the running,
-plain-language log of what changed; CI enforces that it stays in sync with guide and validation edits.
+language, plus `platform/` for **TypeScript and Python baselines**, design, infrastructure, and
+`validation/` for branch, a11y, and privacy rules). The **monorepo** subfolders hold **only** pnpm and
+Turborepo workspace rules. Start at [guides/INDEX.md](guides/INDEX.md). The [CHANGELOG](CHANGELOG.md) is the
+running, plain-language log of what changed; CI enforces that it stays in sync with guide and validation
+edits.
 
 The root [STYLE_GUIDE_JAVASCRIPT.md](STYLE_GUIDE_JAVASCRIPT.md) is a short index into the TypeScript guides.
 
@@ -36,9 +38,9 @@ dotfiles/
 ├── guides/
 │   ├── INDEX.md
 │   ├── manifest.json
-│   ├── monorepo/…, server/…, client/…
-│   ├── platform/design/        # product UX, Shadcn-style components
-│   ├── platform/infra/         # Terraform and OpenTofu
+│   ├── monorepo/…              # pnpm, Turborepo, workspace layout only
+│   ├── platform/               # TypeScript + Python language baselines, design, infra
+│   ├── server/…, client/…
 │   └── validation/            # a11y bar, branches, privacy, future security
 ├── scripts/
 │   ├── install.sh
@@ -116,7 +118,7 @@ If you need to freeze a project, copy the resolved config into the project itsel
 
 ## Style guide gaps that were flagged
 
-These values were not explicitly defined in the style guides under `guides/` (see [monorepo/typescript/STYLE_GUIDE.md](guides/monorepo/typescript/STYLE_GUIDE.md)) and were confirmed during setup:
+These values were not explicitly defined in the style guides under `guides/` (see [platform/typescript/STYLE_GUIDE.md](guides/platform/typescript/STYLE_GUIDE.md)) and were confirmed during setup:
 
 - Node version pinned to `22`
 - Tab width pinned to `2`

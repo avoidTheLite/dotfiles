@@ -2,40 +2,42 @@
 
 These documents target **full-stack monorepo** applications (shared packages, `apps/api`, `apps/web`, polyglot services). Layout is **role first** (`monorepo` / `server` / `client`), then **language** — the same tree works for TypeScript and Python.
 
-**Platform** (`guides/platform/`) holds **product and component design** (for example [platform/design/DESIGN.md](platform/design/DESIGN.md) and [components](platform/design/components.md)) and **infrastructure as code** ([platform/infra/STYLE_GUIDE.md](platform/infra/STYLE_GUIDE.md)) — including Terraform- and OpenTofu-compatible conventions.
+**Platform** (`guides/platform/`) holds **TypeScript and Python language baselines** (tooling, formatters, and rules that apply in every repo), **product and component design** ([platform/design](platform/design/DESIGN.md)), and **infrastructure** ([platform/infra/STYLE_GUIDE.md](platform/infra/STYLE_GUIDE.md)).
 
 **Validation** ([validation/INDEX.md](validation/INDEX.md)) covers **repository quality**: branch naming, privacy and safe examples, accessibility bar for UIs, and a placeholder for future security-pattern checks.
 
-Read **TypeScript (monorepo)** before any other TypeScript guide; stack-specific guides add rules on top. Read **Python (monorepo)** before any other Python guide.
+Read **[TypeScript (platform)](platform/typescript/STYLE_GUIDE.md)** and **[Python (platform)](platform/python/STYLE_GUIDE.md)** for language baselines, then the **monorepo** guides if you use **pnpm + Turborepo**; stack-specific (server, client) guides add rules on top.
 
-## Monorepo
+## Platform (languages, design, and infrastructure)
 
 | Guide | Use when |
 |--------|-----------|
-| [TypeScript](monorepo/typescript/STYLE_GUIDE.md) | ESM, `tsconfig`, ESLint/Prettier, editor, Vitest (server + client packages), DB test infra, pnpm, Turborepo, repo layout |
-| [Python](monorepo/python/STYLE_GUIDE.md) | Python 3.13, uv, Ruff, Pyright strict, Pydantic at boundaries, OpenAPI SSOT, pytest + Hypothesis, Turborepo task wiring for Python, repo layout |
+| [TypeScript (platform)](platform/typescript/STYLE_GUIDE.md) | Node/ESM, `tsconfig`, ESLint, Prettier, Vitest, Zod, layout **within** a package — **always** first for TS |
+| [Python (platform)](platform/python/STYLE_GUIDE.md) | Python 3.13, uv, Ruff, Pyright, Pydantic, OpenAPI, pytest — **always** first for Python |
+| [Design / UX](platform/design/DESIGN.md) | Product principles, tokens, Shadcn-friendly assumptions |
+| [Components](platform/design/components.md) | Shadcn-style `components/ui`, composition |
+| [Infrastructure (IaC)](platform/infra/STYLE_GUIDE.md) | Terraform or OpenTofu, fmt, tflint, state, CI |
+
+## Monorepo (workspaces and Turbo only)
+
+| Guide | Use when |
+|--------|-----------|
+| [TypeScript (monorepo)](monorepo/typescript/STYLE_GUIDE.md) | `pnpm` workspaces, **Turborepo** `turbo.json`, `apps/` / `packages/` top-level layout, task graph — **not** general TS syntax |
+| [Python (monorepo)](monorepo/python/STYLE_GUIDE.md) | **Polyglot** repos: Python **tasks** in Turbo next to TypeScript, polyglot `apps/` tree — **not** general Python style |
 
 ## Server
 
 | Guide | Use when |
 |--------|-----------|
 | [TypeScript](server/typescript/STYLE_GUIDE.md) | **Standalone** `apps/api`, Express, Pino, errors, Zod env, Knex; **mutually exclusive** with Python server for the same HTTP surface |
-| [Python](server/python/STYLE_GUIDE.md) | **Standalone** FastAPI/server stack; **mutually exclusive** with TypeScript server for the same API; baseline in [Python (monorepo)](monorepo/python/STYLE_GUIDE.md) |
+| [Python](server/python/STYLE_GUIDE.md) | **Standalone** FastAPI/server stack; **mutually exclusive** with TypeScript server for the same API; shared rules in [Python (platform)](platform/python/STYLE_GUIDE.md) |
 
 ## Client
 
 | Guide | Use when |
 |--------|-----------|
 | [TypeScript](client/typescript/STYLE_GUIDE.md) | `apps/web`, React, Tailwind, TanStack Query, Zustand, RTL, MSW |
-| [Python](client/python/STYLE_GUIDE.md) | Browser or desktop UI in Python — **section map** to TypeScript client; defers shared Python rules to [Python (monorepo)](monorepo/python/STYLE_GUIDE.md) |
-
-## Platform (design and infrastructure)
-
-| Guide | Use when |
-|--------|-----------|
-| [Design / UX](platform/design/DESIGN.md) | Product principles, tokens, content, Shadcn-friendly assumptions |
-| [Components](platform/design/components.md) | Shadcn-style `components/ui`, composition, testing pointers |
-| [Infrastructure (IaC)](platform/infra/STYLE_GUIDE.md) | Terraform or OpenTofu HCL, fmt, tflint, state, and CI |
+| [Python](client/python/STYLE_GUIDE.md) | Browser or desktop UI in Python — **section map** to TypeScript client; shared Python rules in [Python (platform)](platform/python/STYLE_GUIDE.md) |
 
 ## Validation (repository and CI quality)
 
@@ -51,9 +53,9 @@ Read **TypeScript (monorepo)** before any other TypeScript guide; stack-specific
 
 | Guide | Use when |
 |--------|-----------|
-| [Python (AI)](ai/python/STYLE_GUIDE.md) | Agents, CrewAI / LangGraph — placeholder; links to Python (monorepo) |
-| [Python (CLI)](cli/python/STYLE_GUIDE.md) | Typer CLIs — placeholder; links to Python (monorepo) |
-| [Python (data)](data/python/STYLE_GUIDE.md) | Polars / ETL — placeholder; links to Python (monorepo) |
+| [Python (AI)](ai/python/STYLE_GUIDE.md) | Agents, CrewAI / LangGraph — placeholder; links to Python (platform) |
+| [Python (CLI)](cli/python/STYLE_GUIDE.md) | Typer CLIs — placeholder; links to Python (platform) |
+| [Python (data)](data/python/STYLE_GUIDE.md) | Polars / ETL — placeholder; links to Python (platform) |
 
 ## Versioning
 

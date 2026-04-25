@@ -45,7 +45,7 @@
 
 ## Related
 
-- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) for cross-language monorepos that call Terraform
-  tasks from package scripts, if you wire that way.
-- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) for root task runners that invoke fmt and
-  validate.
+- [Python (platform)](../../platform/python/STYLE_GUIDE.md) and [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md)
+  for cross-language monorepos that call Terraform from package scripts, if you wire that way.
+- [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md) and [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md)
+  for root task runners that invoke fmt and validate.
