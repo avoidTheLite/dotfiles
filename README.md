@@ -2,28 +2,49 @@
 
 This repository is the single source of truth for your development environment across Windows (with WSL2), macOS, and Linux.
 
-TypeScript formatting and linting decisions live under **`guides/`** (role-first:
-`monorepo/`, `server/`, `client/`, then language). Start at
-[guides/INDEX.md](guides/INDEX.md); the root [STYLE_GUIDE_JAVASCRIPT.md](STYLE_GUIDE_JAVASCRIPT.md)
-file is a short index into those guides.
+Style and quality decisions live under **`guides/`** (role-first: `monorepo/`, `server/`, `client/`, then
+language, plus `platform/` for design and infrastructure and `validation/` for branch, a11y, and privacy
+rules). Start at [guides/INDEX.md](guides/INDEX.md). The [CHANGELOG](CHANGELOG.md) is the running,
+plain-language log of what changed; CI enforces that it stays in sync with guide and validation edits.
+
+The root [STYLE_GUIDE_JAVASCRIPT.md](STYLE_GUIDE_JAVASCRIPT.md) is a short index into the TypeScript guides.
+
+## Continuous integration
+
+From the repository root, with **Node 20+** and **git** available:
+
+```sh
+bash scripts/validate.sh
+```
+
+On pull requests, **GitHub Actions** runs the same checks (and **gitleaks**). **pre-commit** can call the same
+script: install with [pre-commit](https://pre-commit.com) and `pre-commit install` (see
+[.pre-commit-config.yaml](.pre-commit-config.yaml)). Topic branch names for **this** repository are enforced
+in CI via [config/branch-standards.json](config/branch-standards.json) — copy and edit that file in other
+repos to set your own pattern.
 
 ## Repository layout
 
 ```text
 dotfiles/
+├── CHANGELOG.md
 ├── STYLE_GUIDE_JAVASCRIPT.md   # pointer into guides/ (TypeScript)
+├── .github/
+│   └── workflows/validate.yml
+├── config/
+│   └── branch-standards.json   # this repo’s branch name regex; copy per project
 ├── guides/
 │   ├── INDEX.md
 │   ├── manifest.json
-│   ├── monorepo/typescript/STYLE_GUIDE.md
-│   ├── server/typescript/STYLE_GUIDE.md
-│   ├── server/python/STYLE_GUIDE.md
-│   ├── client/typescript/STYLE_GUIDE.md
-│   └── client/python/STYLE_GUIDE.md
-├── README.md
+│   ├── monorepo/…, server/…, client/…
+│   ├── platform/design/        # product UX, Shadcn-style components
+│   ├── platform/infra/         # Terraform and OpenTofu
+│   └── validation/            # a11y bar, branches, privacy, future security
 ├── scripts/
 │   ├── install.sh
-│   └── init-project.sh
+│   ├── init-project.sh
+│   ├── validate.sh
+│   └── validate/               # node scripts (manifest, links, changelog, …)
 ├── vscode/
 │   ├── settings.json
 │   └── extensions.txt

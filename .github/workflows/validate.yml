@@ -1,0 +1,56 @@
+# Validation suite for the dotfiles / guides repository.
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          check-latest: false
+
+      - name: Branch name (PR only, reads config/branch-standards.json)
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+        run: node scripts/validate/branch-name.mjs
+
+      - name: Core validation
+        run: node scripts/validate/manifest.mjs && node scripts/validate/internal-links.mjs
+
+      - name: Changelog structure
+        run: node scripts/validate/check-changelog.mjs
+
+      - name: Changelog must update when normative paths change
+        if: github.event_name == 'pull_request'
+        env:
+          CI: "true"
+        run: node scripts/validate/check-guides-changelog.mjs
+
+      - name: Exception marker format
+        run: node scripts/validate/check-exception-markers.mjs
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

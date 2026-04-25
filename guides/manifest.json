@@ -1,12 +1,19 @@
 {
-  "version": 3,
-  "description": "Style and convention guides. Only includes files that exist in the repo. Top-level roles: monorepo, server, client; languages under each.",
+  "version": 4,
+  "description": "Style and convention guides. Only includes files that exist in the repo. Top-level roles: monorepo, server, client, platform (design and infra), validation (repo quality); languages under monorepo/server/client where applicable.",
   "default_full_stack_typescript": [
     "ts.monorepo",
     "ts.server",
     "ts.client"
   ],
   "default_full_stack_python": ["py.monorepo", "py.server"],
+  "default_validation": [
+    "platform.design",
+    "platform.components",
+    "platform.infra",
+    "validation.a11y",
+    "validation.branching"
+  ],
   "guides": [
     {
       "id": "ts.monorepo",
@@ -101,6 +108,86 @@
       "prerequisites": ["py.monorepo"],
       "tooling": ["polars"],
       "note": "Stub; expand when data pipelines land."
+    },
+    {
+      "id": "platform.design",
+      "path": "guides/platform/design/DESIGN.md",
+      "language": "neutral",
+      "role": "platform",
+      "pillar": "platform",
+      "domains": ["design", "ux", "content"],
+      "prerequisites": [],
+      "tooling": ["tailwind", "shadcn"]
+    },
+    {
+      "id": "platform.components",
+      "path": "guides/platform/design/components.md",
+      "language": "neutral",
+      "role": "platform",
+      "pillar": "platform",
+      "domains": ["design", "components", "react"],
+      "prerequisites": ["platform.design", "ts.client"],
+      "tooling": ["radix", "tailwind", "shadcn"]
+    },
+    {
+      "id": "platform.infra",
+      "path": "guides/platform/infra/STYLE_GUIDE.md",
+      "language": "hcl",
+      "role": "platform",
+      "pillar": "platform",
+      "domains": ["terraform", "opentofu", "ci", "cloud"],
+      "prerequisites": [],
+      "tooling": ["tflint", "terraform", "opentofu"]
+    },
+    {
+      "id": "validation.a11y",
+      "path": "guides/validation/A11Y.md",
+      "language": "neutral",
+      "role": "validation",
+      "pillar": "validation",
+      "domains": ["a11y", "wcag", "ci"],
+      "prerequisites": [],
+      "tooling": []
+    },
+    {
+      "id": "validation.branching",
+      "path": "guides/validation/BRANCHING.md",
+      "language": "neutral",
+      "role": "validation",
+      "pillar": "validation",
+      "domains": ["git", "pr", "changelog"],
+      "prerequisites": [],
+      "tooling": []
+    },
+    {
+      "id": "validation.privacy",
+      "path": "guides/validation/PRIVACY.md",
+      "language": "neutral",
+      "role": "validation",
+      "pillar": "validation",
+      "domains": ["security", "secrets", "gitleaks"],
+      "prerequisites": [],
+      "tooling": ["gitleaks"]
+    },
+    {
+      "id": "validation.security",
+      "path": "guides/validation/SECURITY_PATTERNS.md",
+      "language": "neutral",
+      "role": "validation",
+      "pillar": "validation",
+      "domains": ["llm", "prompts", "sast"],
+      "prerequisites": [],
+      "note": "Placeholder for future policy; not enforced by strict CI today."
+    },
+    {
+      "id": "validation.index",
+      "path": "guides/validation/INDEX.md",
+      "language": "neutral",
+      "role": "validation",
+      "pillar": "validation",
+      "domains": ["index"],
+      "prerequisites": [],
+      "note": "Human index into validation/; optional for automation stacks."
     }
   ]
 }

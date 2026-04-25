@@ -1,0 +1,12 @@
+# Install: https://pre-commit.com —  pipx install pre-commit && pre-commit install
+fail_fast: true
+
+repos:
+  - repo: local
+    hooks:
+      - id: dotfiles-validate
+        name: dotfiles validate (manifest, links, changelog, exceptions, optional gitleaks)
+        entry: bash scripts/validate.sh
+        language: system
+        pass_filenames: false
+        always_run: true

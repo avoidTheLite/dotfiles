@@ -5,6 +5,11 @@
 > covers ESM, `tsconfig`, ESLint/Prettier, Vitest, pnpm, Turborepo, and shared
 > types (`@battleship/types`).
 
+> **Product and design system** conventions (tokens, Shadcn-style `components/ui`, composition) live under
+> [platform design](../../platform/design/DESIGN.md) and
+> [components](../../platform/design/components.md). The accessibility bar and CI expectations for UIs
+> are summarized in [validation A11Y](../../validation/A11Y.md).
+
 ---
 
 ## Table of Contents

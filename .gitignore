@@ -1,0 +1,7 @@
+# Optional local notes that must never be public (see guides/validation/PRIVACY.md)
+private/
+
+# OS / editor
+.DS_Store
+*~
+*.swp
