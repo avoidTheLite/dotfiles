@@ -1,9 +1,10 @@
 # Style Guide — Python (server)
 
 > **HTTP APIs, workers, and data access** implemented in **Python** (FastAPI by
-> default). This guide is **standalone** for that stack: you can implement and
-> review a Python service using **this file plus**
-> [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) only.
+> default). This guide is **standalone** for the **server** layer. Read
+> [Python (platform)](../../platform/python/STYLE_GUIDE.md) first for the **language** baseline (uv, Ruff,
+> Pyright, Pydantic, OpenAPI, pytest). If the repo is a **polyglot Turborepo** monorepo, also read
+> [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md).
 >
 > **Mutual exclusivity:** For a **given HTTP API** (one service boundary that
 > clients call), choose **either** the Python server conventions **or** the
@@ -13,9 +14,9 @@
 > architecture, which you document outside these guides.
 >
 > **Shared Python tooling** (Python 3.13, uv, Ruff, Pyright strict, Pydantic at
-> boundaries, OpenAPI SSOT, pytest, Turborepo) lives in
-> [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md). Read it first for
-> every Python package.
+> boundaries, OpenAPI SSOT, pytest) lives in
+> [Python (platform)](../../platform/python/STYLE_GUIDE.md). **Turborepo**-specific wiring lives in
+> [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) when the service sits beside Node packages.
 
 ---
 
@@ -62,7 +63,7 @@
   prefixes that match your API design and your **OpenAPI** layout.
 - Prefixes and tags should stay stable once clients exist; breaking path changes
   go through the same **spec + codegen** discipline as in
-  [Python (monorepo) — OpenAPI](../../monorepo/python/STYLE_GUIDE.md#openapi-as-single-source-of-truth).
+  [Python (platform) — OpenAPI](../../platform/python/STYLE_GUIDE.md#openapi-as-single-source-of-truth).
 
 ---
 
@@ -134,7 +135,7 @@
   in production and **SQLite** (or isolated Postgres) in tests unless the
   project documents otherwise.
 - Mirror the **testing discipline** in
-  [Python (monorepo) — Testing](../../monorepo/python/STYLE_GUIDE.md#testing):
+  [Python (platform) — Testing](../../platform/python/STYLE_GUIDE.md#testing):
   migrations, fixtures, and **serial** tests when tests share DB state.
 
 ---
@@ -147,7 +148,7 @@ When this Python service lives beside **TypeScript** apps in the same repo:
    [Python (monorepo) — Python tasks in Turborepo](../../monorepo/python/STYLE_GUIDE.md#python-tasks-in-turborepo).
 2. Treat the **committed OpenAPI** artifact as the cross-language HTTP contract
    when other languages consume this API — see
-   [Python (monorepo) — OpenAPI](../../monorepo/python/STYLE_GUIDE.md#openapi-as-single-source-of-truth).
+   [Python (platform) — OpenAPI](../../platform/python/STYLE_GUIDE.md#openapi-as-single-source-of-truth).
 3. Keep **log correlation fields** compatible with the rest of the fleet (same
    names for request IDs, trace context, etc.).
 
@@ -155,9 +156,11 @@ When this Python service lives beside **TypeScript** apps in the same repo:
 
 ## Related guides
 
-- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) — required baseline
+- [Python (platform)](../../platform/python/STYLE_GUIDE.md) — required language baseline
+- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) — polyglot Turbo workspace
 - [Python (client)](../../client/python/STYLE_GUIDE.md)
-- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) — only when
-  you need **Node-side** workspace and Turborepo details in a polyglot repo
+- [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md)
+- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) — Node-side
+  **turbo** / **pnpm** in a polyglot repo
 - [TypeScript (server)](../typescript/STYLE_GUIDE.md) — **separate** stack for
   Node-only APIs; not mixed with this guide for the same HTTP surface

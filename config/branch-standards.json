@@ -1,0 +1,6 @@
+{
+  "description": "Branch naming for this repository. Other repos should copy this file to their own `config/branch-standards.json` (or similar) and set `headBranchPattern` to match that team's rules. The GitHub workflow reads this file so the regex lives in one place per repo.",
+  "defaultBranch": "main",
+  "headBranchPattern": "^((feature|fix|chore|docs)/[a-z0-9][a-z0-9-]*|dependabot/.+)$",
+  "explanation": "Topic branches: one of the prefixes, a slash, then a kebab-style slug (lowercase letters, digits, hyphens; must not start with a hyphen). The dependabot/ prefix is allowed so automated updates can merge. No underscores in the slug."
+}

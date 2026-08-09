@@ -1,18 +1,16 @@
 # Style Guide — TypeScript (index)
 
-TypeScript conventions for a **full-stack monorepo** are split by **role**
-(monorepo vs server vs client) so the same layout can mirror other languages
-under `guides/server/python`, `guides/client/python`, etc.
+TypeScript conventions are split by **scope**:
 
-## Read in this order
+1. **[TypeScript (platform)](guides/platform/typescript/STYLE_GUIDE.md)** — **Language baseline** (Node/ESM,
+   `tsconfig`, ESLint/Prettier, Vitest, Zod, layout _within_ a package). Read this **first** for any TS
+   program.
+2. **[TypeScript (monorepo)](guides/monorepo/typescript/STYLE_GUIDE.md)** — **Only** for **pnpm + Turborepo**
+   workspaces (`turbo.json`, `apps/`, `packages/`, task graph). Skip if you have a single package.
+3. **[Server](guides/server/typescript/STYLE_GUIDE.md)** and **[Client](guides/client/typescript/STYLE_GUIDE.md)** — Express vs React, etc.
 
-1. **[Monorepo](guides/monorepo/typescript/STYLE_GUIDE.md)** — ESM, `tsconfig`,
-   ESLint/Prettier, editor, Vitest (server and client package configs), DB test
-   setup, pnpm, Turborepo, repository layout.
-2. **[Server (`apps/api`)](guides/server/typescript/STYLE_GUIDE.md)** — Express,
-   Pino, errors, Zod env, Knex.
-3. **[Client (`apps/web`)](guides/client/typescript/STYLE_GUIDE.md)** — React,
-   Tailwind, TanStack Query, Zustand, RTL, MSW.
+**Python** in the same repository: [Python (platform)](guides/platform/python/STYLE_GUIDE.md) first, then
+[Python (monorepo)](guides/monorepo/python/STYLE_GUIDE.md) for polyglot Turbo wiring.
 
 ## All guides
 

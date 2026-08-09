@@ -1,9 +1,9 @@
 # Style Guide — TypeScript (server)
 
 > **`apps/api` and Node HTTP services.** Read
-> [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) first — it
-> covers ESM, `tsconfig`, ESLint/Prettier, Vitest basics, pnpm, Turborepo, and the
-> repository tree.
+> [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md) first for the **language** baseline
+> (ESM, `tsconfig`, ESLint/Prettier, Vitest, Zod). If the project is a **pnpm + Turborepo** monorepo, also
+> read [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) for workspace and task graph.
 
 ---
 
@@ -19,7 +19,7 @@
   Express 5.x** APIs. It does not assume you read the Python server guide.
 - **Polyglot repository:** Other services may be written in Python; **HTTP
   contracts** across languages follow the **OpenAPI** rules in
-  [Python (monorepo) — OpenAPI](../../monorepo/python/STYLE_GUIDE.md#openapi-as-single-source-of-truth)
+  [Python (platform) — OpenAPI](../../platform/python/STYLE_GUIDE.md#openapi-as-single-source-of-truth)
   when the spec is the shared artifact. **Zod-at-boundaries** below applies to
   **this** Express app’s own request handlers only.
 
@@ -36,12 +36,12 @@
 ## Testing (server packages)
 
 Use the **server** Vitest configuration from
-[Testing → Test Runner](../../monorepo/typescript/STYLE_GUIDE.md#test-runner)
+[Testing → Test Runner](../../platform/typescript/STYLE_GUIDE.md#test-runner)
 (`environment: 'node'`, `setupFiles` for DB if applicable).
 
-[Testing → Test File Conventions](../../monorepo/typescript/STYLE_GUIDE.md#test-file-conventions)
+[Testing → Test File Conventions](../../platform/typescript/STYLE_GUIDE.md#test-file-conventions)
 and
-[Testing → Test Infrastructure](../../monorepo/typescript/STYLE_GUIDE.md#test-infrastructure)
+[Testing → Test Infrastructure](../../platform/typescript/STYLE_GUIDE.md#test-infrastructure)
 (Knex, PostgreSQL / SQLite) apply directly to API packages.
 
 ---
@@ -340,9 +340,10 @@ Pino's log levels, in order of severity:
 
 ## Related guides
 
-- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md)
-- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) — OpenAPI SSOT and
-  Python tooling when the repo also ships FastAPI services
+- [TypeScript (platform)](../../platform/typescript/STYLE_GUIDE.md)
+- [TypeScript (monorepo)](../../monorepo/typescript/STYLE_GUIDE.md) — when this API lives in a Turbo workspace
+- [Python (platform)](../../platform/python/STYLE_GUIDE.md) — OpenAPI SSOT, shared Python contract rules
+- [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) — polyglot Turbo wiring for Python
 - [Python (server)](../python/STYLE_GUIDE.md) — **alternative** stack for
   Python-backed APIs (not combined with this guide for the same surface)
 - [TypeScript (client)](../../client/typescript/STYLE_GUIDE.md)

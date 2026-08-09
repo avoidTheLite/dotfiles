@@ -1,0 +1,16 @@
+# gitleaks — https://github.com/gitleaks/gitleaks
+# Allowlist only what must stay in docs; prefer obviously fake example values in prose.
+
+title = "dotfiles"
+
+[allowlist]
+paths = [
+  '''.gitleaks\.toml''',
+]
+
+# Example key shapes sometimes shown in guides (extend if a rule misfires)
+
+regexes = [
+  '''^sk-test-''',
+  '''^ghp_0{4,}''',
+]
