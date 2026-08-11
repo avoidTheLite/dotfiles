@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org",
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
