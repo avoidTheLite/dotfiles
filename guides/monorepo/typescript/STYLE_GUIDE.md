@@ -71,10 +71,10 @@ Example layout (names are illustrative; adjust to your product):
 ```text
 project-root/
 ├── apps/
-│   ├── api/               # e.g. @battleship/api — Node server
+│   ├── api/               # e.g. @your-org/api — Node server
 │   │   ├── vitest.config.ts
 │   │   └── src/           # feature folders, co-located tests — see platform guide
-│   └── web/               # e.g. @battleship/web — React client
+│   └── web/               # e.g. @your-org/web — React client
 │       ├── vitest.config.ts
 │       ├── index.html
 │       └── src/

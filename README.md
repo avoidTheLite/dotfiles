@@ -2,14 +2,10 @@
 
 This repository is the single source of truth for your development environment across Windows (with WSL2), macOS, and Linux.
 
-Style and quality decisions live under **`guides/`** (role-first: `monorepo/`, `server/`, `client/`, then
-language, plus `platform/` for **TypeScript and Python baselines**, design, infrastructure, and
-`validation/` for branch, a11y, and privacy rules). The **monorepo** subfolders hold **only** pnpm and
-Turborepo workspace rules. Start at [guides/INDEX.md](guides/INDEX.md). The [CHANGELOG](CHANGELOG.md) is the
-running, plain-language log of what changed; CI enforces that it stays in sync with guide and validation
+Style and quality decisions live in
+`identity/workspace-standards.json`. The [CHANGELOG](CHANGELOG.md) is the
+running, plain-language log of what changed; CI enforces that it stays in sync with standards and validation
 edits.
-
-The root [STYLE_GUIDE_JAVASCRIPT.md](STYLE_GUIDE_JAVASCRIPT.md) is a short index into the TypeScript guides.
 
 ## Continuous integration
 
@@ -30,18 +26,13 @@ repos to set your own pattern.
 ```text
 dotfiles/
 ├── CHANGELOG.md
-├── STYLE_GUIDE_JAVASCRIPT.md   # pointer into guides/ (TypeScript)
+├── STYLE_GUIDE_JAVASCRIPT.md   # legacy style guide index
 ├── .github/
 │   └── workflows/validate.yml
 ├── config/
 │   └── branch-standards.json   # this repo’s branch name regex; copy per project
-├── guides/
-│   ├── INDEX.md
-│   ├── manifest.json
-│   ├── monorepo/…              # pnpm, Turborepo, workspace layout only
-│   ├── platform/               # TypeScript + Python language baselines, design, infra
-│   ├── server/…, client/…
-│   └── validation/            # a11y bar, branches, privacy, future security
+├── identity/
+│   └── workspace-standards.json # standards source of truth (JSON)
 ├── scripts/
 │   ├── install.sh
 │   ├── init-project.sh
@@ -106,7 +97,7 @@ Template projects are wired to load ESLint and Prettier from your home dotfiles 
 
 If you need to freeze a project, copy the resolved config into the project itself instead of referencing dotfiles.
 
-## Style-guide-aligned defaults in this repo
+## Workspace-standards-aligned defaults in this repo
 
 - Node version: `22`
 - ESLint format: flat config (`eslint.config.js`) only
@@ -116,11 +107,11 @@ If you need to freeze a project, copy the resolved config into the project itsel
   - Format on save enabled
   - ESLint fix on save set to explicit
 
-## Style guide gaps that were flagged
+## Workspace standards gaps that were flagged
 
-These values were not explicitly defined in the style guides under `guides/` (see [platform/typescript/STYLE_GUIDE.md](guides/platform/typescript/STYLE_GUIDE.md)) and were confirmed during setup:
+These values were not explicitly defined in `identity/workspace-standards.json` and were confirmed during setup:
 
 - Node version pinned to `22`
 - Tab width pinned to `2`
 
-The style guide also does not list a canonical ESLint plugin inventory; this repo includes only plugins needed to enforce explicitly stated lint behavior (node protocol imports, explicit TypeScript import extensions, and type-only import style).
+The workspace standards also do not list a canonical ESLint plugin inventory; this repo includes only plugins needed to enforce explicitly stated lint behavior (node protocol imports, explicit TypeScript import extensions, and type-only import style).
