@@ -32,6 +32,18 @@
     ]
   },
   "global_code_quality_constraints": {
+    "git_workflows": {
+      "default": "github_flow",
+      "github_flow": {
+        "base_branch": "main",
+        "branch_per_task": true,
+        "branch_standards_file": "config/branch-standards.json",
+        "commit_style": "atomic",
+        "merge_strategy": "squash",
+        "pr_template": ".github/PULL_REQUEST_TEMPLATE.md",
+        "on_completion": "open PR against main, following pr_template"
+      }
+    },
     "type_safety": {
       "enforce_strict_types": true,
       "allow_explicit_any": false,
