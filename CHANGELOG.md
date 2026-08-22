@@ -4,6 +4,7 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Updated `identity/workspace-standards.json` to version 2.1.0, adding database conventions, websocket/SSE conventions, component library references, and turbo generator mappings for code generation support.
 - Introduced a pre-configured standard UI component library (Button, Input, Label, Checkbox, Dialog, DropdownMenu, Card) under `identity/components/` following TypeScript client style guide specifications.
 - Added a `dotfiles` command-line interface (`scripts/dotfiles` and `scripts/dotfiles.mjs`) supporting `install-components` and `sync-components` commands to easily install, check for updates, and sync standard components with downstream repositories, including supporting dry-run modes, force overwrites, and automated weekly sync scaffolding.
 - Updated Machine Setup (`scripts/install.sh`) to automatically install/symlink the new `dotfiles` CLI.

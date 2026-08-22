@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.0.0",
-    "last_updated": "2026-08-10",
+    "version": "2.1.0",
+    "last_updated": "2026-08-22",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -54,6 +54,19 @@
       }
     }
   },
+  "database_conventions": {
+    "primary_datastore": "PostgreSQL",
+    "test_datastore": "SQLite",
+    "node": {
+      "driver": "Knex",
+      "migrations": "Knex CLI",
+      "seeds": "Knex CLI"
+    },
+    "python": {
+      "orm": "SQLAlchemy 2.x",
+      "migrations": "Alembic"
+    }
+  },
   "language_and_platform_ecosystem": {
     "monorepo_orchestration_conventions": {
         "framework": "pnpm workspaces + Turborepo",
@@ -65,8 +78,11 @@
           "targets": {
             "frontend_app": "./identity/scaffolding/templates/web-frontend",
             "backend_service": "./identity/scaffolding/templates/python-backend",
-            "shared_package": "./identity/scaffolding/templates/packages"
-          }
+            "shared_package": "./identity/scaffolding/templates/packages",
+            "node_backend": "./identity/scaffolding/templates/node-backend"
+          },
+          "default_backend_language": "node",
+          "capability_manifest": "./identity/generation/capability-manifest.json"
         },
         "preferred_languages": {
           "web_frontend": {
@@ -80,6 +96,7 @@
           },
           "node_server_conventions": {
             "framework": "Express 5.x on Node.js 22",
+            "database": "database_conventions.node",
             "app_assembly": "app.ts creates and exports the Express application. index.ts imports and calls .listen(). This separates port binding from initialization to allow test importing.",
             "routing_pattern": "One *Router.ts file per domain, mounted in app.ts under a path prefix.",
             "controllers_pattern": "Controllers are factory functions returning an object of handler methods.",
@@ -87,6 +104,10 @@
             "logging_standard": "Structured JSON logs using Pino via a thin wrapper in @battleship/util. No console.log in application code. local development piped through pino-pretty.",
             "error_handling": "No try/catch in route handlers. Express 5 auto-forwards thrown errors to errorHandler middleware. Custom error classes in @battleship/types extend AppError and carry a statusCode."
           }
+        },
+        "component_library": {
+          "location": "./identity/components",
+          "note": "Canonical source for generated frontend imports; supersedes shadcn copy-into-src pattern in client_react_typescript.primitive_components"
         }
     },
     "cloud_infrastructure_conventions": {
@@ -147,7 +168,23 @@
           "python_cli_tools": "Typer with Pydantic CLI payloads, help/UX consistency, and distribution via uv scripts.",
           "python_etl_data": "Polars lazy/eager strategy, Pydantic validation at pipeline boundaries, and testing with golden files."
         }
+      },
+      "websocket_conventions": {
+        "node": "Socket.IO, one namespace per domain",
+        "python": "FastAPI native WebSocket, one route per domain"
+      },
+      "sse_conventions": {
+        "node": "text/event-stream GET route per domain",
+        "python": "FastAPI StreamingResponse route per domain"
       }
+  },
+  "generation_conventions": {
+    "capability_manifest": {
+      "location": "./identity/generation/capability-manifest.json",
+      "regeneration": "manual",
+      "script": "./identity/generation/scripts/generate-manifest.mjs",
+      "ci_sync": false
+    }
   },
   "uncategorized": {
   }
