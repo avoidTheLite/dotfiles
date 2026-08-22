@@ -4,6 +4,9 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Introduced a pre-configured standard UI component library (Button, Input, Label, Checkbox, Dialog, DropdownMenu, Card) under `identity/components/` following TypeScript client style guide specifications.
+- Added a `dotfiles` command-line interface (`scripts/dotfiles` and `scripts/dotfiles.mjs`) supporting `install-components` and `sync-components` commands to easily install, check for updates, and sync standard components with downstream repositories, including supporting dry-run modes, force overwrites, and automated weekly sync scaffolding.
+- Updated Machine Setup (`scripts/install.sh`) to automatically install/symlink the new `dotfiles` CLI.
 - Split **general TypeScript and Python** into [guides/platform/typescript/STYLE_GUIDE.md](guides/platform/typescript/STYLE_GUIDE.md) and [guides/platform/python/STYLE_GUIDE.md](guides/platform/python/STYLE_GUIDE.md). The [monorepo](guides/monorepo/) guides now only cover **pnpm**, **Turborepo**, and top-level `apps/` / `packages/` layout. Updated the manifest to version 5, adjusted prerequisites (`ts.platform` / `py.platform` first), and refreshed cross-links across server, client, and stub guides.
 - Added a full validation pipeline: manifest checks, internal markdown link resolution, CHANGELOG structure, exception-marker format, optional local gitleaks, and a GitHub Actions workflow that enforces the same on push and on pull requests.
 - Added a per-repository branch name policy in `config/branch-standards.json` and a CI check that enforces the pattern for this dotfiles repo (topic branches: `feature/`, `fix/`, `chore/`, `docs/`, plus `dependabot/` for automation). Other projects can copy the file and edit the regular expression in one place.
