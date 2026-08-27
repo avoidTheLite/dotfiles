@@ -21,6 +21,17 @@ script: install with [pre-commit](https://pre-commit.com) and `pre-commit instal
 in CI via [config/branch-standards.json](config/branch-standards.json) — copy and edit that file in other
 repos to set your own pattern.
 
+## Agent skill routing and package installation
+
+This repository is both a routing layer for agent work and the source of truth for installable skills and
+skill packages. The canonical entrypoints live under [skills](skills/): [skills/AGENT.md](skills/AGENT.md)
+and [skills/Claude.md](skills/Claude.md) orient agents into the repo, while [skills/packages](skills/packages)
+contains named package lists that downstream repos can install via the custom `dotfiles` CLI.
+
+Any committed change to a skill's actual content must include the matching version bump in the skill's
+frontmatter. CI enforces this via the skill-version validator so a downstream `dotfiles update` flow can detect
+major changes before overwriting local work.
+
 ## Repository layout
 
 ```text
@@ -33,11 +44,17 @@ dotfiles/
 │   └── branch-standards.json   # this repo’s branch name regex; copy per project
 ├── identity/
 │   └── workspace-standards.json # standards source of truth (JSON)
+├── skills/
+│   ├── AGENT.md                # agent routing guide for the repo
+│   ├── Claude.md               # Claude-specific routing guide
+│   ├── README.md               # skill package and install overview
+│   └── packages/
+│       └── core.md             # named package list for installation
 ├── scripts/
 │   ├── install.sh
 │   ├── init-project.sh
 │   ├── validate.sh
-│   └── validate/               # node scripts (manifest, links, changelog, …)
+│   └── validate/               # node scripts (manifest, links, changelog, skill versioning, …)
 ├── vscode/
 │   ├── settings.json
 │   └── extensions.txt

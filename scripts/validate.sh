@@ -17,6 +17,7 @@ node "$ROOT/scripts/validate/internal-links.mjs"
 node "$ROOT/scripts/validate/check-changelog.mjs"
 node "$ROOT/scripts/validate/check-exception-markers.mjs"
 node "$ROOT/scripts/validate/check-guides-changelog.mjs"
+node "$ROOT/scripts/validate/check-skill-versioning.mjs"
 node "$ROOT/scripts/validate/branch-name.mjs"
 
 if command -v gitleaks &>/dev/null; then
