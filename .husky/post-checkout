@@ -1,0 +1,33 @@
+#!/bin/sh
+# Get the hash of the previous HEAD, new HEAD, and the checkout flag
+OLD_HEAD=$1
+NEW_HEAD=$2
+BRANCH_SWITCH=$3
+
+# Only trigger if it was an actual branch switch (flag is 1)
+if [ "$BRANCH_SWITCH" -eq 1 ]; then
+  
+  # Check if root or workspace dependency files changed between the branches
+  if git diff --name-only "$OLD_HEAD" "$NEW_HEAD" | grep -E "package\.json|pnpm-lock\.yaml|package-lock\.json|yarn\.lock" > /dev/null; then
+    echo ""
+    echo "=========================================================="
+    echo "⚠️  Dependency changes detected between branches!"
+    echo "   Running fresh installation for the monorepo..."
+    echo "=========================================================="
+    echo ""
+
+    # Detect the correct package manager and run the install
+    if [ -f "pnpm-lock.yaml" ]; then
+      pnpm install
+    elif [ -f "yarn.lock" ]; then
+      yarn install
+    else
+      npm install
+    fi
+    
+    echo ""
+    echo "✅ Workspace dependencies are now up to date."
+    echo "=========================================================="
+    echo ""
+  fi
+fi
