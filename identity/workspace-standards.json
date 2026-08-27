@@ -149,6 +149,35 @@
         }
       }
   },
+  "skill_system": {
+    "repo_purpose": "The dotfiles repository is the source of truth for reusable agent skills and skill packages. It routes agents to the relevant skill instructions and serves as the install source for downstream repositories through the custom dotfiles CLI.",
+    "skill_layout": {
+      "root": "skills/",
+      "skill_directory": "skills/<skill-name>/",
+      "skill_file": "SKILL.md",
+      "packages_directory": "skills/packages/",
+      "agent_orientation_files": [
+        "AGENT.md",
+        "Claude.md"
+      ]
+    },
+    "authoring_requirements": {
+      "frontmatter_required": true,
+      "required_fields": [
+        "name",
+        "description",
+        "version",
+        "status",
+        "compatible_agents",
+        "deps"
+      ],
+      "version_policy": "Any content change under a skill directory requires an increment in the skill's semver version in SKILL.md. Major changes require explicit review before the dotfiles CLI silently overwrites a downstream installation.",
+      "package_policy": "A package is a named list of skill names, lives under skills/packages/, and resolves to the current repo state at install time rather than pinning specific versions.",
+      "agent_agnostic_body": "Skill instructions must be agent-agnostic and should delegate agent-specific behavior to adapters when needed. The root skills folder provides agent routing and orientation files, not execution logic.",
+      "commit_rule": "The commit message doubles as the change log for a skill update and should state the version transition; a version bump is required whenever the skill content changes."
+    },
+    "validation_gate": "The repository validation suite includes scripts/validate/check-skill-versioning.mjs, which fails if a modified skill directory changes content without a version bump. This check runs in both local validation and GitHub CI."
+  },
   "uncategorized": {
   }
 }

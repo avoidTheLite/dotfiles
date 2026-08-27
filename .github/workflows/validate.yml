@@ -46,6 +46,11 @@ jobs:
           CI: "true"
         run: node scripts/validate/check-guides-changelog.mjs
 
+      - name: Skill content requires version bump
+        env:
+          CI: "true"
+        run: node scripts/validate/check-skill-versioning.mjs
+
       - name: Exception marker format
         run: node scripts/validate/check-exception-markers.mjs
 
