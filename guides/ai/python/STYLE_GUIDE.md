@@ -21,6 +21,7 @@ pytest, OpenAPI where HTTP is involved) live in
 
 ## Related guides
 
+- [Skill Authoring Standards](../../../agent-skills/skills/SKILL_AUTHORING_STANDARDS.md) — Standards for creating and maintaining reusable agent skills, packages, and Editions.
 - [Python (platform)](../../platform/python/STYLE_GUIDE.md)
 - [Python (monorepo)](../../monorepo/python/STYLE_GUIDE.md) (polyglot Turbo only)
 - [Python (server)](../../server/python/STYLE_GUIDE.md)

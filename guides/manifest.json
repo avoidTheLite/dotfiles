@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "description": "Style and convention guides. Platform = language baselines (TypeScript, Python) and design/infra. Monorepo = pnpm, Turborepo, workspace layout only. Roles: monorepo, server, client, platform, validation.",
   "default_full_stack_typescript": [
     "ts.platform",
@@ -108,6 +108,16 @@
       "prerequisites": ["py.platform"],
       "tooling": [],
       "note": "Stub; expand when AI packages land."
+    },
+    {
+      "id": "agent.skills",
+      "path": "agent-skills/skills/SKILL_AUTHORING_STANDARDS.md",
+      "language": "neutral",
+      "role": "ai",
+      "pillar": "platform",
+      "domains": ["skills", "packages", "editions"],
+      "prerequisites": ["py.ai"],
+      "note": "Standards for creating and package-managing agent skills & Editions."
     },
     {
       "id": "py.cli",

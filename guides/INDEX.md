@@ -54,6 +54,7 @@ Read **[TypeScript (platform)](platform/typescript/STYLE_GUIDE.md)** and **[Pyth
 | Guide | Use when |
 |--------|-----------|
 | [Python (AI)](ai/python/STYLE_GUIDE.md) | Agents, CrewAI / LangGraph — placeholder; links to Python (platform) |
+| [Skill Authoring Standards](../agent-skills/skills/SKILL_AUTHORING_STANDARDS.md) | Creating, versioning, and package-managing agent skills & Editions |
 | [Python (CLI)](cli/python/STYLE_GUIDE.md) | Typer CLIs — placeholder; links to Python (platform) |
 | [Python (data)](data/python/STYLE_GUIDE.md) | Polars / ETL — placeholder; links to Python (platform) |
 
