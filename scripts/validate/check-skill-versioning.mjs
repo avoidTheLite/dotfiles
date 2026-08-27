@@ -70,12 +70,12 @@ function getSkillDirectories(changedFiles) {
       continue;
     }
 
-    const [_, topLevel, secondLevel] = segments;
-    if (topLevel !== 'skills' || !secondLevel || secondLevel === 'packages' || secondLevel === 'AGENT.md' || secondLevel === 'Claude.md' || secondLevel === 'README.md') {
+    const [skillsDir, skillName, fileInSkill] = segments;
+    if (skillsDir !== 'skills' || !skillName || skillName === 'packages' || skillName === 'AGENT.md' || skillName === 'Claude.md' || skillName === 'README.md') {
       continue;
     }
 
-    result.add(`${topLevel}/${secondLevel}`);
+    result.add(`${skillsDir}/${skillName}`);
   }
 
   return [...result].sort();

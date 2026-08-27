@@ -111,7 +111,7 @@
     },
     {
       "id": "agent.skills",
-      "path": "agent-skills/skills/SKILL_AUTHORING_STANDARDS.md",
+      "path": "skills/skill-authoring/SKILL.md",
       "language": "neutral",
       "role": "ai",
       "pillar": "platform",
