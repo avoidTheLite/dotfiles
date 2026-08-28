@@ -1,0 +1,7 @@
+import type { Request, Response } from 'express';
+
+export const healthController = () => ({
+  get: (_req: Request, res: Response): void => {
+    res.json({ status: 'ok' });
+  },
+});

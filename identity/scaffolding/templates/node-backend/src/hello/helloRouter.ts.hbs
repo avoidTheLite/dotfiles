@@ -1,0 +1,8 @@
+import { Router, json } from 'express';
+import { helloController } from './helloController.ts';
+
+export const helloRouter = Router();
+helloRouter.use(json());
+
+const controller = helloController();
+helloRouter.get('/hello', controller.get);

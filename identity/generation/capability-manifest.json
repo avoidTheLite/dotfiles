@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "description": "Available turbo/plop generators shipped with this dotfiles repository.",
+  "cli": {
+    "install": "dotfiles install [target-dir] --config <file.json>",
+    "generate": "dotfiles generate [target-dir] --config <file.json>"
+  },
+  "generators": [
+    {
+      "id": "monorepo_root",
+      "status": "available",
+      "description": "pnpm workspaces + Turborepo root (turbo.json, package.json, eslint, prettier)",
+      "source": "./identity/scaffolding/templates/monorepo-root",
+      "destination": "."
+    },
+    {
+      "id": "frontend_app",
+      "status": "available",
+      "description": "React 18 + Vite + Tailwind CSS frontend app",
+      "source": "./identity/scaffolding/templates/web-frontend",
+      "destination": "apps/{{name}}"
+    },
+    {
+      "id": "node_backend",
+      "status": "available",
+      "description": "Express 5 TypeScript service with health and hello routes",
+      "source": "./identity/scaffolding/templates/node-backend",
+      "destination": "apps/{{name}}"
+    },
+    {
+      "id": "shared_package",
+      "status": "available",
+      "description": "Shared workspace packages (tsconfig, types, util)",
+      "source": "./identity/scaffolding/templates/packages",
+      "destination": "packages/{{name}}"
+    },
+    {
+      "id": "backend_service",
+      "status": "planned",
+      "description": "Python FastAPI backend (not included in the Node + React MVP)",
+      "source": "./identity/scaffolding/templates/python-backend",
+      "destination": "apps/{{name}}"
+    }
+  ]
+}

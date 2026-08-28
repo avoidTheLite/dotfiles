@@ -49,6 +49,9 @@ jobs:
       - name: Exception marker format
         run: node scripts/validate/check-exception-markers.mjs
 
+      - name: Scaffold generator
+        run: node --test scripts/generate.test.mjs
+
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:

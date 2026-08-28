@@ -32,10 +32,13 @@ dotfiles/
 ├── config/
 │   └── branch-standards.json   # this repo’s branch name regex; copy per project
 ├── identity/
-│   └── workspace-standards.json # standards source of truth (JSON)
+│   ├── workspace-standards.json # standards source of truth (JSON)
+│   ├── scaffolding/            # turbo/plop templates for monorepo generation
+│   └── generation/             # capability manifest + example JSON configs
 ├── scripts/
 │   ├── install.sh
 │   ├── init-project.sh
+│   ├── dotfiles                # CLI: install generators and render from JSON
 │   ├── validate.sh
 │   └── validate/               # node scripts (manifest, links, changelog, …)
 ├── vscode/
@@ -80,6 +83,25 @@ sh ~/dotfiles/scripts/init-project.sh my-project
 ```
 
 This creates `./my-project` from `~/dotfiles/project-template`, replaces `__PROJECT_NAME__` placeholders, and prints next steps.
+
+## Generate a React + Node monorepo
+
+Machine setup (`scripts/install.sh`) puts the `dotfiles` CLI on your PATH. From an empty directory, pass a JSON object of generator inputs:
+
+```sh
+mkdir my-app && cd my-app
+dotfiles install --example --name my-app --scope @my-app
+pnpm install
+pnpm dev
+```
+
+`--example` uses [identity/generation/examples/react-node-monorepo.json](identity/generation/examples/react-node-monorepo.json). To supply your own arguments:
+
+```sh
+dotfiles install ./my-app --config ./scaffold.json
+```
+
+The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders a pnpm + Turborepo workspace with `apps/web` (React 18, Vite, Tailwind) and `apps/api` (Express 5). After install, `pnpm exec turbo gen` can add another frontend or Node service. See [identity/scaffolding/README.md](identity/scaffolding/README.md).
 
 ## Updating base configs
 

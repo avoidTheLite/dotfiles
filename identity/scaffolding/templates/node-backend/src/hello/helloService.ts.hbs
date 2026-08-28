@@ -1,0 +1,5 @@
+import type { HelloResponse } from '{{scope}}/types';
+
+export const getHelloMessage = (projectName: string): HelloResponse => ({
+  message: `Hello from ${projectName}`,
+});

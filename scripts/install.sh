@@ -100,4 +100,10 @@ echo "detected os: ${os_name}"
 link_file "${SOURCE_SETTINGS}" "${code_settings}" "vscode"
 link_file "${SOURCE_SETTINGS}" "${cursor_settings}" "cursor"
 
+DOTFILES_CLI="${DOTFILES_DIR}/scripts/dotfiles"
+if [ -f "${DOTFILES_CLI}" ]; then
+  link_file "${DOTFILES_CLI}" "${HOME}/.local/bin/dotfiles" "dotfiles CLI"
+  echo "note: make sure ${HOME}/.local/bin is in your PATH to use the 'dotfiles' CLI"
+fi
+
 echo "done: editor settings symlinks are configured"

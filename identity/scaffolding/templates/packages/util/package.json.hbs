@@ -1,0 +1,24 @@
+{
+  "name": "{{scope}}/util",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "{{scope}}/types": "workspace:*",
+    "express": "^5.1.0",
+    "pino": "^9.6.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.10.2",
+    "typescript": "~5.7.2"
+  }
+}

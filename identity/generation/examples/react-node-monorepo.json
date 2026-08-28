@@ -1,0 +1,10 @@
+{
+  "projectName": "demo",
+  "scope": "@demo",
+  "description": "Generated React + Node monorepo",
+  "apps": [
+    { "type": "frontend_app", "name": "web" },
+    { "type": "node_backend", "name": "api" }
+  ],
+  "packages": ["tsconfig", "types", "util"]
+}

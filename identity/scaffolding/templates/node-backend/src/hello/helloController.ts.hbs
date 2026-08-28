@@ -1,0 +1,9 @@
+import type { Request, Response } from 'express';
+import { env } from '../config.ts';
+import { getHelloMessage } from './helloService.ts';
+
+export const helloController = () => ({
+  get: (_req: Request, res: Response): void => {
+    res.json(getHelloMessage(env.PROJECT_NAME));
+  },
+});

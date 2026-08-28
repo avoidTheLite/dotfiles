@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.0.0",
-    "last_updated": "2026-08-10",
+    "version": "2.1.0",
+    "last_updated": "2026-08-28",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -65,7 +65,15 @@
           "targets": {
             "frontend_app": "./identity/scaffolding/templates/web-frontend",
             "backend_service": "./identity/scaffolding/templates/python-backend",
-            "shared_package": "./identity/scaffolding/templates/packages"
+            "shared_package": "./identity/scaffolding/templates/packages",
+            "node_backend": "./identity/scaffolding/templates/node-backend",
+            "monorepo_root": "./identity/scaffolding/templates/monorepo-root"
+          },
+          "default_backend_language": "node",
+          "capability_manifest": "./identity/generation/capability-manifest.json",
+          "cli": {
+            "install": "Copy turbo/plop generators into the working directory and render apps from a JSON config object.",
+            "command": "dotfiles install [target-dir] --config <file.json>"
           }
         },
         "preferred_languages": {
@@ -148,6 +156,18 @@
           "python_etl_data": "Polars lazy/eager strategy, Pydantic validation at pipeline boundaries, and testing with golden files."
         }
       }
+  },
+  "generation_conventions": {
+    "capability_manifest": {
+      "location": "./identity/generation/capability-manifest.json",
+      "regeneration": "manual",
+      "script": "./identity/generation/scripts/generate-manifest.mjs",
+      "ci_sync": false
+    },
+    "scaffold_config": {
+      "schema": "./identity/generation/scaffold-config.schema.json",
+      "example": "./identity/generation/examples/react-node-monorepo.json"
+    }
   },
   "uncategorized": {
   }

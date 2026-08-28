@@ -4,6 +4,10 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Added an MVP **turbo/plop code generator**: `dotfiles install --config <json>` copies generators into a working directory and scaffolds a pnpm + Turborepo monorepo with a React (Vite + Tailwind) app and an Express 5 Node service. Templates live under `identity/scaffolding/`; the example config is `identity/generation/examples/react-node-monorepo.json`.
+- Updated `identity/workspace-standards.json` to version 2.1.0 with turbo generator mappings, a capability manifest, and generation conventions for the CLI JSON workflow.
+- Allow `cursor/` topic branches in `config/branch-standards.json` so Cloud Agent PRs pass the branch-name check.
+
 - Split **general TypeScript and Python** into [guides/platform/typescript/STYLE_GUIDE.md](guides/platform/typescript/STYLE_GUIDE.md) and [guides/platform/python/STYLE_GUIDE.md](guides/platform/python/STYLE_GUIDE.md). The [monorepo](guides/monorepo/) guides now only cover **pnpm**, **Turborepo**, and top-level `apps/` / `packages/` layout. Updated the manifest to version 5, adjusted prerequisites (`ts.platform` / `py.platform` first), and refreshed cross-links across server, client, and stub guides.
 - Added a full validation pipeline: manifest checks, internal markdown link resolution, CHANGELOG structure, exception-marker format, optional local gitleaks, and a GitHub Actions workflow that enforces the same on push and on pull requests.
 - Added a per-repository branch name policy in `config/branch-standards.json` and a CI check that enforces the pattern for this dotfiles repo (topic branches: `feature/`, `fix/`, `chore/`, `docs/`, plus `dependabot/` for automation). Other projects can copy the file and edit the regular expression in one place.

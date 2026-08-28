@@ -1,0 +1,8 @@
+import { Router, json } from 'express';
+import { healthController } from './healthController.ts';
+
+export const healthRouter = Router();
+healthRouter.use(json());
+
+const controller = healthController();
+healthRouter.get('/', controller.get);

@@ -1,0 +1,15 @@
+import type { RequestHandler } from 'express';
+import { createLogger } from './logger.ts';
+
+const logger = createLogger({ module: 'http' });
+
+export const requestLogger: RequestHandler = (req, res, next): void => {
+  const start = Date.now();
+  res.on('finish', () => {
+    logger.info(
+      { method: req.method, path: req.path, status: res.statusCode, ms: Date.now() - start },
+      'request',
+    );
+  });
+  next();
+};

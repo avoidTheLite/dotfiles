@@ -1,0 +1,6 @@
+import pino from 'pino';
+
+export const createLogger = (context: { module: string; level?: string }): pino.Logger => {
+  const { level = process.env.LOG_LEVEL ?? 'info', ...childContext } = context;
+  return pino({ level }).child(childContext);
+};
