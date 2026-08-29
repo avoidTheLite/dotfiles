@@ -32,7 +32,7 @@
       "status": "available",
       "description": "Shared workspace packages (tsconfig, types, util)",
       "source": "./identity/scaffolding/templates/packages",
-      "destination": "packages/{{name}}"
+      "destination": "packages/{{packageName}}"
     },
     {
       "id": "backend_service",

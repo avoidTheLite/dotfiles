@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
+import { escapeJsonString, installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dotfilesRoot = path.resolve(__dirname, '..');
@@ -89,4 +89,36 @@ test('rejects unknown app types', () => {
       }),
     /Unsupported app type/,
   );
+});
+
+test('rejects a subset or duplicate packages list', () => {
+  assert.throws(
+    () =>
+      normalizeConfig({
+        projectName: 'acme',
+        packages: ['tsconfig', 'types'],
+      }),
+    /must include every shared package/,
+  );
+  assert.throws(
+    () =>
+      normalizeConfig({
+        projectName: 'acme',
+        packages: ['tsconfig', 'types', 'util', 'tsconfig'],
+      }),
+    /Duplicate package/,
+  );
+});
+
+test('escapes description so generated package.json stays valid', () => {
+  const targetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-gen-'));
+  const description = 'Acme "demo" \\ repo\nline two';
+  installFromConfig({
+    targetDir,
+    config: { projectName: 'acme', description },
+    dotfilesRoot,
+  });
+  const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, 'package.json'), 'utf8'));
+  assert.equal(pkg.description, description);
+  assert.equal(escapeJsonString(description), 'Acme \\"demo\\" \\\\ repo\\nline two');
 });

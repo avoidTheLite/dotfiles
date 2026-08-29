@@ -39,6 +39,9 @@
     },
     "packages": {
       "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
       "items": {
         "type": "string",
         "enum": ["tsconfig", "types", "util"]

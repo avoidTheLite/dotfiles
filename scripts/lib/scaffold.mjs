@@ -23,6 +23,51 @@ const SCOPE_PATTERN = /^@[a-z][a-z0-9-]*$/;
 const KEBAB_PATTERN = /^[a-z][a-z0-9-]*$/;
 
 /**
+ * Escape a string so it is safe inside a JSON string literal after {{token}}
+ * substitution (quotes, backslashes, and control characters).
+ * @param {string} value
+ * @returns {string}
+ */
+export function escapeJsonString(value) {
+  return JSON.stringify(String(value)).slice(1, -1);
+}
+
+/**
+ * @param {unknown} rawPackages
+ * @returns {string[]}
+ */
+function normalizePackages(rawPackages) {
+  if (rawPackages === undefined) {
+    return [...DEFAULT_PACKAGES];
+  }
+  if (!Array.isArray(rawPackages)) {
+    throw new Error('Config "packages" must be an array of strings');
+  }
+  const seen = new Set();
+  for (const value of rawPackages) {
+    if (typeof value !== 'string') {
+      throw new Error('Config "packages" must be an array of strings');
+    }
+    if (!DEFAULT_PACKAGES.includes(value)) {
+      throw new Error(
+        `Unsupported package "${value}". Required: ${DEFAULT_PACKAGES.join(', ')}`,
+      );
+    }
+    if (seen.has(value)) {
+      throw new Error(`Duplicate package "${value}"`);
+    }
+    seen.add(value);
+  }
+  const missing = DEFAULT_PACKAGES.filter((pkg) => !seen.has(pkg));
+  if (missing.length > 0) {
+    throw new Error(
+      `Config "packages" must include every shared package (${DEFAULT_PACKAGES.join(', ')}); missing: ${missing.join(', ')}`,
+    );
+  }
+  return [...DEFAULT_PACKAGES];
+}
+
+/**
  * @param {string} template
  * @param {Record<string, string>} data
  * @returns {string}
@@ -127,21 +172,7 @@ export function normalizeConfig(raw) {
     seenNames.add(item.name);
   }
 
-  const packages = Array.isArray(input.packages)
-    ? input.packages.map((value) => {
-        if (typeof value !== 'string') {
-          throw new Error('Config "packages" must be an array of strings');
-        }
-        return value;
-      })
-    : DEFAULT_PACKAGES;
-  for (const pkg of packages) {
-    if (!DEFAULT_PACKAGES.includes(pkg)) {
-      throw new Error(
-        `Unsupported package "${pkg}". Supported: ${DEFAULT_PACKAGES.join(', ')}`,
-      );
-    }
-  }
+  const packages = normalizePackages(input.packages);
 
   return {
     projectName,
@@ -255,7 +286,7 @@ export function installFromConfig({ targetDir, config, dotfilesRoot, force = fal
   const sharedData = {
     projectName: normalized.projectName,
     scope: normalized.scope,
-    description: normalized.description,
+    description: escapeJsonString(normalized.description),
     name: normalized.projectName,
   };
 
