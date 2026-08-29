@@ -486,7 +486,7 @@ export interface ThreadRecord {
   threadTs: string;
   channelId: string;
   status: 'open' | 'resolved';
-  resolutionCriteria?: string;  // optional; see §12 — source mechanism still open
+  resolutionCriteria?: string;  // Phase 3-reserved; unused by Phase 2 logic, see §12
   createdAt: string;
   updatedAt: string;
 }
