@@ -45,8 +45,10 @@ Build a microservice that:
 
 - Connects to Slack as its own app/bot identity, `@runner`.
 - Accepts messages addressed to it via a small CLI-style command grammar.
-- Routes each message to **exactly one, explicitly named** backend adapter
-  (Claude API or OpenAI API in this phase) — no automatic backend selection.
+- **Requires the backend adapter as an explicit input on every dispatch** —
+  the caller always names exactly one adapter (Claude, OpenAI, Cursor, or
+  Copilot in this phase); there is **no automatic backend selection at this
+  time** (see Phase 3 for the decision engine that changes this).
 - Maintains a structured context store per thread so follow-up messages in
   the same thread pull prior decisions/summary from the runner's own store,
   not from Slack's thread history.
@@ -66,10 +68,22 @@ architecture below is shaped so they slot in without a rewrite:
 - **Automatic routing / decision engine** (complexity heuristics, budget
   polling, local-headroom checks) — Phase 3. The `--agent` flag is always
   required in Phase 2; there is no default-agent fallback.
-- **Cursor / Copilot adapters** — Phase 2 explicitly punts this per-task:
-  those tools keep using their native Slack apps (Phase 1 path) until a
-  concrete case for programmatic control appears. No adapter stubs are
-  built for them yet (see [§16.6](#16-open-design-decisions)).
+- **Cross-adapter fallback on failure** (e.g. retrying a failed dispatch
+  against a *different* adapter — a local model, or another cloud agent) —
+  Phase 3. Because Phase 2 always requires an explicit `--agent`, there is
+  never an "unspecified adapter" case to fall back from; this only becomes
+  meaningful once Phase 3 introduces default/auto-selected adapters. See
+  [§13](#13-error-handling--failure-modes).
+- **Thread watch mode** — an optional parameter (e.g. `--watch`) that would
+  let `@runner` keep responding to every reply in a thread it has already
+  participated in, without being re-mentioned each turn — Phase 3. Phase 2
+  only responds to direct `@runner` mentions (and DMs); see
+  [§6](#6-command-grammar).
+- **Automatic knowledge-repo subfolder classification** — deciding whether a
+  filed issue belongs under `/knowledge/_shared` vs a specific
+  `/knowledge/{product-or-subdomain}` path in avoidTheLite/dkr — Phase 3/4.
+  Phase 2's issue bridge files a generic, un-triaged issue when no repo is
+  given; see [§11](#11-github-issue-bridge).
 - **Domain knowledge repository, agent memory formalization, promotion
   workflow** — Phase 4.
 - **Full closure-action set from the intake/thread-resolution design**
@@ -79,6 +93,10 @@ architecture below is shaped so they slot in without a rewrite:
   of this runner's Phase 2 surface.
 - **Reasoning field on the dispatch log** — the column is reserved (nullable)
   now so Phase 3 doesn't require a migration, but nothing populates it yet.
+- **Cursor/Copilot async completion callback** — surfacing the eventual
+  PR/result of a Cursor or Copilot dispatch back into the originating Slack
+  thread (polling, webhook, etc.) is not solved in this phase; see
+  [§7](#7-adapter-interface-contract) and [§16.7](#16-open-design-decisions).
 
 ## 3. Terminology
 
@@ -117,10 +135,11 @@ architecture below is shaped so they slot in without a rewrite:
                  └───────────────┘ └───────┬────────┘        └─────────────────┘
                                             │ augmented prompt
                                             ▼
-                                  ┌───────────────────┐
-                                  │   Adapter Layer     │
-                                  │ (Claude | OpenAI)   │
-                                  └──────────┬──────────┘
+                                  ┌───────────────────────────┐
+                                  │       Adapter Layer         │
+                                  │ (Claude | OpenAI | Cursor |  │
+                                  │         Copilot)             │
+                                  └──────────┬──────────────────┘
                                              │ reply text
                                              ▼
                                   posted back into the Slack thread
@@ -139,8 +158,12 @@ architecture below is shaped so they slot in without a rewrite:
 **Components:**
 
 - **Slack Interface Layer** — Bolt app in Socket Mode. Listens for
-  `app_mention` events (and thread replies where the runner already
-  participated — see [§16.2](#16-open-design-decisions)). Ignores everything else.
+  top-level `app_mention` events and direct messages (DMs) to `@runner`.
+  Does **not** respond to unmentioned replies within a thread in Phase 2 —
+  every dispatch requires a direct mention (or a DM); a "watch this thread"
+  opt-in mode that would remove that requirement is deferred to Phase 3
+  (see [§2](#2-out-of-scope) and [§16.2](#16-open-design-decisions)).
+  Ignores everything else.
 - **Command Parser** — turns raw mention text into a `ParsedCommand`
   (intent text, `skills: string[]`, `agent: string`, or a recognized
   control verb). Pure function, fully unit-testable without Slack.
@@ -150,8 +173,11 @@ architecture below is shaped so they slot in without a rewrite:
   by `thread_ts` (see [§8](#8-context-store)).
 - **Skills Registry** — a lookup of skill name → middleware function
   (see [§9](#9-skills-middleware)).
-- **Adapter Layer** — Claude and OpenAI adapters behind a common interface
-  (see [§7](#7-adapter-interface-contract)).
+- **Adapter Layer** — Claude, OpenAI, Cursor, and Copilot adapters behind a
+  common interface (see [§7](#7-adapter-interface-contract)). All four are
+  in scope for Phase 2 — the runner calls Cursor's and Copilot's APIs
+  directly rather than only routing to their native Slack apps, since
+  nothing prevents calling them directly today.
 - **Dispatch Logger** — writes a `dispatch_log` row and emits a structured
   Pino log line for every completed dispatch.
 - **GitHub Issue Bridge** — invoked only by the `file-issue` control verb;
@@ -226,7 +252,16 @@ ignores the standards file.
   is not applicable to a single self-hosted process. **Docker is still
   used** for the container image (parity with the standards'
   containerization convention and for reproducible home-lab deployment),
-  but there is no cloud provisioning step. See [§16.7](#16-open-design-decisions).
+  but there is no cloud provisioning step.
+- **Deployment shape (resolved, [§16.8](#16-open-design-decisions)):** Phase
+  2 ships the runner as a single Docker image, run standalone
+  (`docker run`) — the same low-ceremony approach planned for the
+  Phase 3 local-model stack, which will start from the stock OpenWebUI
+  Docker image before anything is composed. A self-authored
+  `docker-compose.yml` that orchestrates the runner alongside the
+  local-model stack is the anticipated next step once Phase 3 lands, but
+  is not a Phase 2 requirement — a bare `Dockerfile` + run instructions are
+  sufficient here.
 
 ## 6. Command Grammar
 
@@ -240,14 +275,14 @@ parses to the same `ParsedCommand`.**
 **Canonical form:**
 
 ```
-@runner <intent text> --agent=<name> [--skill=<name>[,<name>...]]
+@runner <intent text> --agent=<name> [--skill=<name>[,<name>...]] [--history=<n>]
 ```
 
 **Shorthand alias** (equivalent to the above when the first token before
 the intent text ends in `:` and matches a known agent name):
 
 ```
-@runner <agent>: <intent text>
+@runner <agent>: <intent text> [--skill=<name>[,<name>...]] [--history=<n>]
 ```
 
 **Control verbs** — a small fixed set of non-adapter commands, matched
@@ -267,10 +302,11 @@ control-verb  ::= "file-issue" (WS repo-slug)? | "help"
 dispatch      ::= shorthand-form | canonical-form
 shorthand-form::= agent-name ":" WS intent-text (WS flag)*
 canonical-form::= intent-text (WS flag)*
-flag          ::= "--agent=" agent-name | "--skill=" skill-list
+flag          ::= "--agent=" agent-name | "--skill=" skill-list | "--history=" digits
 agent-name    ::= /[a-z0-9-]+/
 skill-list    ::= skill-name ("," skill-name)*
 skill-name    ::= /[a-z0-9-]+/
+digits        ::= /[0-9]+/
 intent-text   ::= /.+/   (free text; flags are stripped out of it, not embedded)
 ```
 
@@ -282,18 +318,24 @@ intent-text   ::= /.+/   (free text; flags are stripped out of it, not embedded)
   is no default agent in Phase 2. Missing it is a `ValidationError`
   ("Phase 2 requires an explicit `--agent=`; automatic routing isn't built
   yet.").
-- `--agent` must name an adapter registered in the Adapter Layer (§7) or
-  the parser throws `ValidationError` listing the currently registered
-  adapter names.
+- `--agent` must name an adapter registered in the Adapter Layer (§7) — one
+  of `claude`, `openai`, `cursor`, `copilot` in this phase — or the parser
+  throws `ValidationError` listing the currently registered adapter names.
 - `--skill` is optional; unknown skill names are a `ValidationError`
   listing registered skill names (fail closed — silently ignoring a typo'd
   skill would be worse than telling the caller).
+- `--history=<n>` is optional and overrides the configured default context
+  depth for this dispatch only (see [§8](#8-context-store)); a non-numeric
+  or out-of-range value is a `ValidationError`.
 - Control verbs take priority over dispatch parsing — `file-issue` and
   `help` are reserved words and cannot double as agent names.
 - On any `ValidationError`, the runner replies **in-thread** with the error
   message and does **not** call an adapter, write a dispatch-log row, or
   mutate context-store state (a rejected command is a no-op past the
   reply).
+- The runner only parses commands from **direct `@runner` mentions and
+  DMs** — not from unmentioned replies within a thread (see
+  [§4](#4-high-level-architecture) and [§16.2](#16-open-design-decisions)).
 
 **Examples:**
 
@@ -301,9 +343,12 @@ intent-text   ::= /.+/   (free text; flags are stripped out of it, not embedded)
 |---|---|
 | `@runner draft a spec for the retry policy --agent=claude` | `{intent: "draft a spec for the retry policy", agent: "claude", skills: []}` |
 | `@runner claude: draft a spec for the retry policy` | same as above |
-| `@runner cursor: fix the auth bug` | `ValidationError` — `cursor` is not a registered adapter in Phase 2 (see §2) |
+| `@runner cursor: fix the auth bug` | `{intent: "fix the auth bug", agent: "cursor", skills: []}` — dispatched to the Cursor adapter (§7) |
 | `@runner summarize this thread --agent=openai --skill=terse,markdown` | `{intent: "summarize this thread", agent: "openai", skills: ["terse", "markdown"]}` |
+| `@runner summarize this thread --agent=openai --history=3` | same as above, but only the 3 most recent context entries are pulled instead of the configured default |
 | `@runner file-issue avoidTheLite/dotfiles` | control verb, routed to the GitHub Issue Bridge, no adapter involved |
+| `@runner file-issue dotfiles` | control verb; bare repo name, resolves to avoidTheLite/dotfiles (see §11) |
+| `@runner file-issue` | control verb; no repo given, resolves to the avoidTheLite/dkr default (see §11) |
 
 ## 7. Adapter Interface Contract
 
@@ -355,6 +400,22 @@ export interface Adapter {
   and swappable.
 - **OpenAI adapter** — wraps the OpenAI Chat Completions (or Responses)
   API with the same shape. Same statelessness assumption.
+- **Cursor adapter** — wraps Cursor's Background Agents API directly
+  (rather than routing through Cursor's native Slack app), since it's
+  callable directly today and there's no reason to keep it off the
+  registry. **Important asymmetry:** unlike Claude/OpenAI, a Cursor
+  background agent run is asynchronous — dispatching it kicks off a task
+  against a repo/branch that completes (e.g. opens a PR) sometime later.
+  `invoke()` therefore returns an **acknowledgment**
+  (`AdapterResponse.text` — a confirmation plus a tracking link) rather
+  than a completed answer. Surfacing the eventual completion back into the
+  Slack thread is not solved in this phase (see [§2](#2-out-of-scope) and
+  [§16.7](#16-open-design-decisions)).
+- **Copilot adapter** — wraps the GitHub Copilot coding agent API directly
+  (e.g. assigning a task/issue to the coding agent) for the same reason:
+  it's directly callable, so it goes in the registry rather than being
+  deferred. Same asynchronous acknowledgment pattern as the Cursor adapter
+  above.
 - **Adding a fifth provider later** (per the plan's guiding architecture)
   means writing one new file implementing `Adapter` and registering it —
   no change to the parser, dispatcher, or context store.
@@ -429,8 +490,28 @@ CREATE INDEX idx_dispatch_log_thread_ts ON dispatch_log(thread_ts);
 
 - **Read path:** the dispatcher calls `getRecentEntries(threadTs, N)` and
   builds the `AdapterMessage[]` from those compacted summaries plus the
-  current intent — **not** from Slack's `conversations.replies`. `N` is
-  configurable (see [§16.8](#16-open-design-decisions) for the default).
+  current intent — **not** from Slack's `conversations.replies`.
+- **History depth `N` is configurable, with a per-request override
+  (resolved, [§16.9](#16-open-design-decisions)):**
+  - A config default (`CONTEXT_HISTORY_DEPTH`, validated by the Zod env
+    schema per [§5](#5-project-conventions)) sets `N` when nothing else
+    overrides it. This is expected to be tuned experimentally, not a fixed
+    constant baked into code.
+  - An **explicit** per-dispatch override via `--history=<n>` in the
+    command grammar (§6) takes precedence over the config default.
+  - An **implicit** override may come from the task/control verb itself —
+    e.g. `file-issue` naturally wants the full thread rather than a
+    windowed `N`, while a quick one-off question wants very little. Phase
+    2 does not attempt to formalize a rule table for every task type; it
+    keeps the mechanism (the dispatcher is free to pass a different
+    `limit` into `getRecentEntries` per code path) available without
+    requiring every task type's implicit value to be pinned down now.
+  - **Scope note:** context here is genuinely more than a single number
+    once threads carry file attachments, multiple agents' outputs, etc. —
+    that fuller "assemble the whole context window" problem is explicitly
+    Phase 3's job. Phase 2 keeps `context_entries` to simple, compacted
+    text summaries and a single depth parameter; it does not attempt file
+    handling or multi-dimensional context assembly yet.
 - **Write path:** after a successful adapter call, the dispatcher writes
   one `context_entries` row (`agent: <the adapter name>`, `summary:` a
   compacted version of the reply — not the raw text verbatim if it's long)
@@ -439,7 +520,7 @@ CREATE INDEX idx_dispatch_log_thread_ts ON dispatch_log(thread_ts);
   server-side to a fixed max length before writing the entry, rather than
   storing full transcripts. A dedicated summarization pass is a Phase 4
   concern (memory formalization); Phase 2 just needs "don't grow
-  unbounded" (see [§16.8](#16-open-design-decisions)).
+  unbounded."
 
 ## 9. Skills Middleware
 
@@ -480,16 +561,19 @@ export interface SkillRegistry {
 
 Step-by-step, for a single incoming Slack event:
 
-1. **Receive** — Bolt event listener fires on `app_mention` (and qualifying
-   thread replies, [§16.2](#16-open-design-decisions)). Non-matching events
-   are ignored before any parsing happens.
+1. **Receive** — Bolt event listener fires on `app_mention` events and DMs
+   only ([§16.2](#16-open-design-decisions)) — unmentioned thread replies
+   are not dispatched in Phase 2. Non-matching events are ignored before
+   any parsing happens.
 2. **Parse** — raw text → `ParsedCommand` (§6). Malformed input short-circuits
    here: reply with the validation error, stop (no logging, no context write).
 3. **Control-verb branch** — if the command is `file-issue` or `help`,
    hand off to that command's handler (§11) and stop; this bypasses the
    adapter/skills/context path entirely.
 4. **Load context** — `contextStore.getThread(threadTs)`; create the
-   thread record if absent. `contextStore.getRecentEntries(threadTs, N)`.
+   thread record if absent. `contextStore.getRecentEntries(threadTs, N)`,
+   where `N` comes from the request's `--history` override if present, else
+   the configured default (§8).
 5. **Resolve skills** — look up each requested skill name in the registry
    (already validated to exist at parse time); fold them over the base
    system prompt in order.
@@ -498,12 +582,13 @@ Step-by-step, for a single incoming Slack event:
 7. **Resolve adapter** — look up `--agent` in the adapter registry (already
    validated to exist at parse time).
 8. **Invoke** — `adapter.invoke(request)`. See [§13](#13-error-handling--failure-modes)
-   for timeout/failure handling.
+   for timeout/failure handling and retry policy.
 9. **Log the dispatch decision** — one `dispatch_log` row
    (`intent, skills_applied, agent_chosen`, `reasoning: null`) plus a
    structured Pino `info` log line, written **regardless of adapter
    success or failure** (failures log at `warn`/`error` with the failure
-   reason instead of a reply summary).
+   reason instead of a reply summary — see §13's structured-error-logging
+   requirement).
 10. **Reply** — post the adapter's `text` back into the Slack thread,
     prefixed with which agent answered (e.g. `*[claude]*`).
 11. **Write back** — `contextStore.appendEntry(...)` with a compacted
@@ -520,11 +605,26 @@ GitHub Issue."*
 - **Input:** all `context_entries` for the thread, compacted into an issue
   body (title derived from the first entry or an explicit override —
   exact heuristic is an open decision, [§16.4](#16-open-design-decisions)).
+- **Repo resolution (resolved, [§16.3](#16-open-design-decisions)):** the
+  `[repo]` argument is resolved in this order, prioritizing "seamlessly
+  easy for the common case" while keeping an explicit escape hatch:
+  1. **Contains a `/`** (e.g. `someorg/somerepo`) — used verbatim. This is
+     the escape hatch for filing outside avoidTheLite entirely.
+  2. **Bare name, no `/`** (e.g. `dotfiles`) — prefixed with `avoidTheLite/`
+     (→ `avoidTheLite/dotfiles`). This is the default path and needs no
+     extra flag for the common case of filing into one of your own repos.
+  3. **Omitted entirely** — defaults to **avoidTheLite/dkr** (the domain
+     knowledge repository). For Phase 2 MVP this is a **generic, un-triaged
+     placement**: the bridge does not attempt to infer whether the content
+     belongs under `/knowledge/_shared` or a specific
+     `/knowledge/{product-or-subdomain}` folder — that classification is a
+     manual (or later-phase) step. The issue body includes a short note
+     pointing whoever triages it at that folder convention. (As of this
+     writing avoidTheLite/dkr has no content yet — this is forward context
+     for when it does.)
 - **Action:** creates a GitHub Issue via the GitHub API (Octokit) in the
-  named repo (or a configured default repo if `[repo]` is omitted —
-  [§16.4](#16-open-design-decisions)), applies a fixed label (e.g.
-  `from-runner`) so filed issues are identifiable, and posts the issue URL
-  back into the Slack thread.
+  resolved repo, applies a fixed label (e.g. `from-runner`) so filed issues
+  are identifiable, and posts the issue URL back into the Slack thread.
 - **Closure semantics:** per the thread-resolution design, marks the
   thread `resolved` (`contextStore.markResolved`) as the side effect of a
   real closure action — not a bare label applied for its own sake.
@@ -536,7 +636,7 @@ GitHub Issue."*
 
 - Every dispatch (successful or failed) produces:
   - a structured Pino JSON log line (fields: `threadTs`, `intent`,
-    `skillsApplied`, `agentChosen`, `outcome`), and
+    `skillsApplied`, `agentChosen`, `outcome`, `attempt`), and
   - a `dispatch_log` row (§8), which is what makes "log every dispatch
     decision" queryable rather than just grep-able in log files.
 - The `reasoning` column exists now, nullable, specifically so Phase 3's
@@ -545,8 +645,23 @@ GitHub Issue."*
   a parser rejection is `warn` (expected/operational), an adapter failure
   is `error` if unexpected or `warn` if it's a known/operational condition
   (e.g. rate limit — see §13).
+- **Every failure log line and every in-thread error reply share the same
+  underlying error fields** (see §13's diagnosability policy) — the Pino
+  log is not a superset of information the Slack reply lacks; it's a
+  machine-queryable copy of the same facts.
 
 ## 13. Error Handling & Failure Modes
+
+**Governing policy (resolved, [§16.10](#16-open-design-decisions)):** this
+service assumes the Slack thread itself is the primary way a failure gets
+noticed and diagnosed — not a log dashboard someone happens to be watching.
+Every in-thread error reply must therefore contain enough for a human *or
+an agent reading only that message* to understand what failed and start
+diagnosing it: which stage failed (parse/adapter/context-store/Slack),
+which adapter and skills were involved, the attempt count, and a sanitized
+version of the underlying error (never a raw secret or stack trace, but
+never just "something went wrong" either). This is stricter than a typical
+generic-500-style message, by design.
 
 Custom error classes extend a shared `AppError` (mirroring the standards
 file's pattern), each carrying a `statusCode`-equivalent classification
@@ -565,14 +680,33 @@ export class AdapterError extends AppError {}          // downstream provider fa
 export class ContextStoreError extends AppError {}     // persistence failure
 ```
 
+Every thrown error carries enough structured detail (`threadTs`,
+`agentChosen`, `skillsApplied`, `attempt`, a `cause`) for both the Slack
+reply text and the paired Pino log line to be built from the *same*
+object — there is one source of truth for "what happened," rendered twice
+(human-readable in Slack, structured in the log).
+
+**Retry policy (resolved, [§16.10](#16-open-design-decisions)):**
+
+- Assuming the runner process itself is healthy, an adapter timeout or 5xx
+  gets **exactly one retry against the same adapter** before it's treated
+  as a failure. There is **no cross-adapter fallback in Phase 2** (e.g.
+  falling back from Claude to a local model, or to a different adapter
+  entirely) — since `--agent` is always an explicit, required input in
+  this phase (§1), there is never an "adapter wasn't specified" case to
+  fall back from. That fallback concept only becomes meaningful once
+  Phase 3 introduces default/auto-selected adapters (see
+  [§2](#2-out-of-scope)); Phase 2's retry logic is deliberately this
+  simple.
+
 | Failure | Handling |
 |---|---|
-| Malformed command / unknown `--agent` / unknown `--skill` | `ValidationError` → reply in-thread with the specific reason, no dispatch-log row, no context write (§6). |
-| Adapter timeout or 5xx | One retry with backoff (exact policy: [§16.9](#16-open-design-decisions)); if still failing, `AdapterError` → apologetic in-thread reply, dispatch-log row written with `outcome: "adapter_error"` so the failure itself is queryable. |
-| Adapter rate limit (429) | Treated as operational (`warn`, not `error`); same reply/logging path as above, distinct `outcome` value so Phase 3's budget-polling work can query specifically for these. |
-| Context store unavailable at read time | `ContextStoreError` → fail closed: reply "context temporarily unavailable, try again" rather than silently dispatching with no history. |
-| Context store unavailable at write time (post-dispatch) | Reply still goes out (the user gets their answer); write failure is logged at `error` but does not re-surface to Slack — a lost compaction write is recoverable, a lost reply is not. |
-| Slack API failure posting the reply | Logged at `error`; no further retry loop in Phase 2 (avoids duplicate replies) — flagged as acceptable manual-recovery behavior for this phase. |
+| Malformed command / unknown `--agent` / unknown `--skill` / bad `--history` | `ValidationError` → reply in-thread with the specific reason (including which registered names *are* valid, so the caller doesn't have to guess-and-check), no dispatch-log row, no context write (§6). |
+| Adapter timeout or 5xx | One retry against the **same** adapter (no backoff delay needed for a single retry at this volume — a fixed short delay, e.g. 1s, is sufficient). If the retry also fails: `AdapterError` → in-thread reply naming the adapter, the intent, and that both attempts failed, plus the sanitized upstream error; dispatch-log row written with `outcome: "adapter_error"` so the failure itself is queryable. |
+| Adapter rate limit (429) | Treated as operational (`warn`, not `error`); same one-retry/reply/logging path as above, distinct `outcome: "adapter_rate_limited"` value so Phase 3's budget-polling work can query specifically for these. |
+| Context store unavailable at read time | `ContextStoreError` → fail closed: reply naming the failure stage ("context store unavailable") rather than silently dispatching with no history. |
+| Context store unavailable at write time (post-dispatch) | Reply still goes out (the user gets their answer); write failure is logged at `error` with full structured detail but does not re-surface to Slack — a lost compaction write is recoverable, a lost reply is not. |
+| Slack API failure posting the reply | Logged at `error` with full structured detail; no further retry loop in Phase 2 (avoids duplicate replies) — flagged as acceptable manual-recovery behavior for this phase. |
 
 ## 14. Security & Secrets
 
@@ -621,40 +755,65 @@ applied per component:
 ## 16. Open Design Decisions
 
 Per this workspace's convergence discipline (don't invent, don't leave a
-fork silently resolved) — these are flagged for explicit sign-off before
-implementation, not guessed:
+fork silently resolved) — items below are resolved per your feedback, with
+the still-open ones called out explicitly rather than guessed.
 
-1. **Command syntax fork** — resolved in this draft as flag-canonical +
-   colon-shorthand alias (§6). Confirm this reading of the plan is what
-   was intended, since the plan's own two sections state it two ways.
-2. **Trigger surface** — does the runner only respond to top-level
-   `app_mention`s, or also to any reply *within* a thread it has already
-   participated in (so a user doesn't have to re-mention `@runner` on every
-   turn)? The Phase 2 exit criteria ("follow-ups in that thread correctly
-   pulling prior context") implies the latter but doesn't say explicitly.
-3. **DMs** — does `@runner` respond in direct messages, or channels/threads
-   only?
-4. **GitHub issue bridge target repo & title heuristic** — is there a
-   default repo when `[repo]` is omitted, and how is the issue title
-   derived from thread content (first message? last summary? explicit
-   `--title=`?).
-5. **Starter skill set** — Phase 2 needs at least one real skill exercised
-   through the registry; which one(s) ship on day one (e.g. `terse`,
-   `markdown-only`, a persona skill)?
-6. **Cursor/Copilot posture** — plan says "decide per-task" whether to keep
-   routing to their native Slack apps or call their APIs directly. This
-   spec assumes **native apps only** for Phase 2 (§2) — confirm, since it
-   affects whether the adapter registry needs placeholder entries at all.
-7. **Deployment target specifics** — confirm the home-lab host/container
-   runtime (bare Docker? Compose? something already standardized
-   elsewhere in this dotfiles repo?) so §5's Docker-without-Terraform
-   posture is concretely actionable rather than just "not AWS."
-8. **History depth (`N`)** — how many compacted `context_entries` get
-   pulled per dispatch, and what's the max length a single compacted entry
-   is truncated/summarized to?
-9. **Retry/backoff policy** — exact attempt count and backoff curve for
-   adapter timeouts/5xx (§13) — a number needs picking, not just "some
-   retry."
+1. **Command syntax fork — Resolved.** Flag-canonical + colon-shorthand
+   alias (§6), confirmed.
+2. **Trigger surface & DMs — Resolved.** `@runner` responds only to direct
+   `@`-mentions and to DMs in Phase 2 — not to unmentioned replies within a
+   thread it has already participated in. A concise opt-in (e.g. a `--watch`
+   flag or equivalent) that would let it keep responding in a thread
+   without re-mention is deferred to **Phase 3** (§2).
+3. **GitHub issue bridge: repo resolution — Resolved.** Bare repo name →
+   `avoidTheLite/<name>` prefix by default (simplest path for the common
+   case); an `owner/repo` argument (contains `/`) is the escape hatch to
+   file anywhere else; omitted entirely → defaults to avoidTheLite/dkr,
+   filed generically/un-triaged since that repo has no
+   `/knowledge/_shared` vs `/knowledge/{product-or-subdomain}` structure
+   populated yet to classify against (§11).
+4. **GitHub issue bridge: title heuristic — Still open.** Repo resolution
+   is settled (#3 above), but how the issue *title* gets derived from
+   thread content (first message? last summary? an explicit `--title=`
+   override?) wasn't addressed yet — flagging for your input.
+5. **Starter skill set — Still open.** Phase 2 needs at least one real
+   skill exercised through the registry to prove the seam works; this
+   wasn't addressed in your last round of feedback either. Proposing a
+   minimal default of a single `terse` skill (constrains reply length/verbosity)
+   so implementation isn't blocked — confirm or swap for something more
+   useful to you.
+6. **Cursor/Copilot posture — Resolved.** Both are first-class Phase 2
+   adapters (§7), called directly rather than only via their native Slack
+   apps, since they're callable directly today.
+7. **Cursor/Copilot async completion callback — Still open (new, follows
+   from #6).** Cursor/Copilot dispatches are asynchronous — `invoke()`
+   returns an acknowledgment, not a finished answer (§7). Whether/how the
+   eventual PR or result gets surfaced back into the originating Slack
+   thread (polling? a webhook receiver on the ops app? nothing until you
+   check manually?) is unresolved and not implemented in this pass.
+8. **Deployment shape — Resolved.** Single Docker image, run standalone
+   (`docker run`) for Phase 2 — matching the low-ceremony approach planned
+   for the Phase 3 local-model stack (starting from the stock OpenWebUI
+   image before anything is composed). A self-authored
+   `docker-compose.yml` uniting runner + local-model stack is anticipated
+   once Phase 3 lands, not a Phase 2 requirement (§5).
+9. **History depth (`N`) — Resolved.** Configurable via a
+   `CONTEXT_HISTORY_DEPTH` env default, overridable per-dispatch via
+   `--history=<n>` (explicit) or by the task/control verb itself
+   (implicit, e.g. `file-issue` wanting the full thread) — mechanism
+   documented in §8, not a hardcoded constant. Full context-window
+   assembly across threads/files is explicitly deferred to Phase 3;
+   Phase 2 keeps `context_entries` to simple compacted text.
+10. **Retry/backoff & error verbosity — Resolved.** Governing policy: the
+    Slack thread is the primary diagnostic surface, so error replies must
+    be verbose enough for a human or agent to diagnose the failure from
+    the message alone, paired with matching structured Pino logs (§12,
+    §13). Retry policy: one retry against the **same** adapter if the
+    runner itself is healthy; **no cross-adapter fallback in Phase 2**
+    since `--agent` is always required as explicit input this phase —
+    that fallback concept (e.g. trying a local model or a different agent
+    if the named one is unresponsive) only becomes meaningful once Phase 3
+    introduces default/auto-selected adapters (§2, §13).
 
 ## 17. Traceability to Phase 2 Exit Criteria
 
@@ -664,15 +823,16 @@ implementation, not guessed:
 | CLI-style syntax `@runner [intent] --skill=x,y --agent=z` | §6 |
 | Claude API adapter (stateless, full `messages` array per call) | §7 |
 | OpenAI API adapter | §7 |
-| Cursor/Copilot: native-app routing decided, not forced | §2, §16.6 |
+| Cursor/Copilot: routing posture decided | §7, §16.6 — resolved as first-class Phase 2 adapters called directly, not native-app-only |
 | Context store (SQLite/Postgres), keyed by `thread_ts`/task id | §8 |
 | Parse intent+flags → context slice → assemble system prompt (skills as middleware) → call adapter → post reply → write back compacted summary | §9, §10 |
 | Spec-to-GitHub-issue bridge | §11 |
 | Log every dispatch decision (intent, skills, agent chosen) | §12 |
-| `@runner claude: draft a spec for X` and `@runner cursor: fix the auth bug` both work from the same thread; follow-ups pull prior context from the runner's own store | §6 (shorthand), §8, §16.2 note on `cursor` specifically resolving to a `ValidationError` in this draft (§2) rather than a working adapter — flagged as a literal reading of the exit-criteria example versus the Phase-2 scope decision in §2, and called out for sign-off in §16.6 |
+| `@runner claude: draft a spec for X` and `@runner cursor: fix the auth bug` both work from the same thread; follow-ups pull prior context from the runner's own store | §6 (shorthand — `cursor:` now dispatches to a real adapter, §7), §8 |
 
 ---
 
-_This document is a draft for iteration. Once open items in §16 are
-resolved, this file is the handoff artifact for the implementing agent —
-no further scope should need inventing at implementation time._
+_This document is a draft for iteration. Items #4, #5, and #7 in §16 are
+still open — everything else has been resolved per your feedback. Once
+those are settled, this file is the handoff artifact for the implementing
+agent — no further scope should need inventing at implementation time._
