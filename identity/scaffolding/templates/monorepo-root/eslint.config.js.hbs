@@ -1,0 +1,36 @@
+import js from '@eslint/js';
+import importPlugin from 'eslint-plugin-import';
+import n from 'eslint-plugin-n';
+import eslintConfigPrettier from 'eslint-config-prettier';
+import tseslint from 'typescript-eslint';
+
+export default [
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    ignores: ['**/dist/**', '**/coverage/**', '**/node_modules/**', '**/.turbo/**'],
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    plugins: {
+      import: importPlugin,
+      n,
+    },
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', disallowTypeAnnotations: false },
+      ],
+      'import/extensions': [
+        'error',
+        'ignorePackages',
+        {
+          ts: 'always',
+          tsx: 'always',
+        },
+      ],
+      'n/prefer-node-protocol': 'error',
+    },
+  },
+  eslintConfigPrettier,
+];

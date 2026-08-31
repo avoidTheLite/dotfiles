@@ -1,0 +1,9 @@
+import { app } from './app.ts';
+import { env } from './config.ts';
+import { createLogger } from '{{scope}}/util';
+
+const logger = createLogger({ module: 'api', level: env.LOG_LEVEL });
+
+app.listen(env.PORT, () => {
+  logger.info({ port: env.PORT }, 'api listening');
+});

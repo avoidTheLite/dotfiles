@@ -18,6 +18,7 @@ node "$ROOT/scripts/validate/check-changelog.mjs"
 node "$ROOT/scripts/validate/check-exception-markers.mjs"
 node "$ROOT/scripts/validate/check-guides-changelog.mjs"
 node "$ROOT/scripts/validate/branch-name.mjs"
+node --test "$ROOT/scripts/generate.test.mjs"
 
 if command -v gitleaks &>/dev/null; then
   gitleaks detect --source . --config .gitleaks.toml --redact -v

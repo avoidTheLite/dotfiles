@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.0.0",
-    "last_updated": "2026-08-10",
+    "version": "2.1.0",
+    "last_updated": "2026-08-28",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -13,88 +13,98 @@
     "explanation_depth": "focus_on_design_tradeoffs_and_edge_cases",
     "code_delivery": "complete_production_ready_no_placeholders"
   },
-  "technical_knowledge_baseline": {
-    "expert_deep_dive": [
-      "TypeScript",
-      "Asynchronous Programming",
-      "System Architecture",
-      "AWS Serverless Infrastructure"
-    ],
-    "proficient_standard_guidance": [
-      "Python",
-      "FastAPI",
-      "Docker",
-      "Relational Database Indexing"
-    ],
-    "novice_explain_principles": [
-      "Kubernetes",
-      "Advanced Cryptography"
-    ]
-  },
   "global_code_quality_constraints": {
-    "type_safety": {
-      "enforce_strict_types": true,
-      "allow_explicit_any": false,
-      "strict_null_checks": true
+    "git_workflows": {
+      "default": "github_flow",
+      "github_flow": {
+        "base_branch": "main",
+        "branch_per_task": true,
+        "branch_standards_file": "config/branch-standards.json",
+        "commit_style": "atomic",
+        "merge_strategy": "squash",
+        "pr_template": ".github/PULL_REQUEST_TEMPLATE.md",
+        "on_completion": "open PR against main, following pr_template"
+      }
     },
-    "testing": {
-      "required": true,
-      "preferred_frameworks": {
-        "typescript": "Vitest",
-        "python": "pytest"
-      },
-      "minimum_coverage_target_percent": 80
+    "versioning_and_releases": {
+      "versioning_strategy": "The source of truth is the git commit SHA. Downstream repos adopt the commit SHA of dotfiles. Bump version in manifest.json for normative changes.",
+      "changelog_policy": "Any normative changes under guides/, validation/, or scripts/ must update the root CHANGELOG.md in the same commit."
     },
     "security": {
       "principle_of_least_privilege": true,
       "input_validation_required": true,
       "strict_env_segregation": true
+    },
+    "validation_and_quality": {
+      "accessibility_bar": "Target WCAG 2.2 AA for internal tools. Enforce eslint-plugin-jsx-a11y and runtime checks (@axe-core/playwright) on built previews in CI. Focus/keyboard order must match visual layout.",
+      "privacy_and_security": "No real secrets, passwords, or host credentials in git. Use fake values in docs (e.g. sk-test-..., REDACTED, ****). Gitleaks is enforced in CI. Optional local private notes folder gitignored.",
+      "branch_standards": "Default branch is main. Topic branch prefixes: feature/, fix/, chore/, docs/ followed by a kebab-case slug. Enforced by validate workflow in CI.",
+      "type_safety": {
+        "enforce_strict_types": true,
+        "allow_explicit_any": false,
+        "strict_null_checks": true
+      },
+      "testing": {
+        "required": true,
+        "preferred_frameworks": {
+          "typescript": "Vitest",
+          "python": "pytest"
+        },
+        "minimum_coverage_target_percent": 80
+      }
     }
   },
   "language_and_platform_ecosystem": {
-    "web_frontend": {
-      "runtime": "Node.js 22",
-      "package_manager": "pnpm",
-      "primary_language": "TypeScript",
-      "framework": "React 18 / Vite",
-      "state_management": "Zustand",
-      "styling": "TailwindCSS",
-      "linter_formatter": "ESLint / Prettier"
+    "monorepo_orchestration_conventions": {
+        "framework": "pnpm workspaces + Turborepo",
+        "task_management": "Root scripts delegate to Turborepo. Tasks like test, lint, format, and typecheck must be consistent across packages.",
+        "task_dependencies": "test, lint, format tasks depend on ^build to ensure upstream dependencies are built first. Missing build scripts in pure-source packages are skipped.",
+        "polyglot_integration": "Python packages plug into Turborepo via package.json scripts that run uv commands. Cache invalidation paths include pyproject.toml, uv.lock, *.py, ruff.toml, and pyrightconfig.json.",
+        "turbo_generator_mappings": {
+          "description": "Direct mapping coordinates for turbo gen inputs matching this schema.",
+          "targets": {
+            "frontend_app": "./identity/scaffolding/templates/web-frontend",
+            "backend_service": "./identity/scaffolding/templates/python-backend",
+            "shared_package": "./identity/scaffolding/templates/packages",
+            "node_backend": "./identity/scaffolding/templates/node-backend",
+            "monorepo_root": "./identity/scaffolding/templates/monorepo-root"
+          },
+          "default_backend_language": "node",
+          "capability_manifest": "./identity/generation/capability-manifest.json",
+          "cli": {
+            "install": "Copy turbo/plop generators into the working directory and render apps from a JSON config object.",
+            "command": "dotfiles install [target-dir] --config <file.json>"
+          }
+        },
+        "preferred_languages": {
+          "web_frontend": {
+            "runtime": "Node.js 22",
+            "package_manager": "pnpm",
+            "primary_language": "TypeScript",
+            "framework": "React 18 / Vite",
+            "state_management": "Zustand",
+            "styling": "TailwindCSS",
+            "linter_formatter": "ESLint / Prettier"
+          },
+          "node_server_conventions": {
+            "framework": "Express 5.x on Node.js 22",
+            "app_assembly": "app.ts creates and exports the Express application. index.ts imports and calls .listen(). This separates port binding from initialization to allow test importing.",
+            "routing_pattern": "One *Router.ts file per domain, mounted in app.ts under a path prefix.",
+            "controllers_pattern": "Controllers are factory functions returning an object of handler methods.",
+            "middleware_rules": "bodyParser.json() applied per-router, not globally. cors() applied globally. Request logging applied globally. errorHandler registered last.",
+            "logging_standard": "Structured JSON logs using Pino via a thin wrapper in @battleship/util. No console.log in application code. local development piped through pino-pretty.",
+            "error_handling": "No try/catch in route handlers. Express 5 auto-forwards thrown errors to errorHandler middleware. Custom error classes in @battleship/types extend AppError and carry a statusCode."
+          }
+        }
     },
-    "python_backend": {
-      "runtime": "Python 3.13",
-      "package_manager": "uv",
-      "framework": "FastAPI",
-      "orm": "SQLAlchemy 2.x",
-      "linter_formatter": "Ruff"
-    },
-    "cloud_infrastructure": {
+    "cloud_infrastructure_conventions": {
       "provider": "AWS",
       "iac_tool": "Terraform / OpenTofu",
       "containerization": "Docker",
       "ci_cd_pipeline": "GitHub Actions"
-    }
-  },
-  "turbo_generator_mappings": {
-    "description": "Direct mapping coordinates for turbo gen inputs matching this schema.",
-    "targets": {
-      "frontend_app": "./identity/scaffolding/templates/web-frontend",
-      "backend_service": "./identity/scaffolding/templates/python-backend",
-      "shared_package": "./identity/scaffolding/templates/packages"
-    }
-  },
-  "uncategorized": {
-    "versioning_and_releases": {
-      "versioning_strategy": "The source of truth is the git commit SHA. Downstream repos adopt the commit SHA of dotfiles. Bump version in manifest.json for normative changes.",
-      "changelog_policy": "Any normative changes under guides/, validation/, or scripts/ must update the root CHANGELOG.md in the same commit."
     },
-    "monorepo_orchestration": {
-      "framework": "pnpm workspaces + Turborepo",
-      "task_management": "Root scripts delegate to Turborepo. Tasks like test, lint, format, and typecheck must be consistent across packages.",
-      "task_dependencies": "test, lint, format tasks depend on ^build to ensure upstream dependencies are built first. Missing build scripts in pure-source packages are skipped.",
-      "polyglot_integration": "Python packages plug into Turborepo via package.json scripts that run uv commands. Cache invalidation paths include pyproject.toml, uv.lock, *.py, ruff.toml, and pyrightconfig.json."
-    },
-    "typescript_platform_baseline": {
+    "typescript_platform_conventions": {
+      "typescript_platform_baseline": {
       "runtime": "Node.js 22",
       "module_system": "Fully ESM with type: module, NodeNext module resolution, and mandatory .ts extension in relative imports. Use node: protocol imports for built-ins.",
       "compiler_settings": "Strict mode is enabled (strictNullChecks, noImplicitAny, etc.). Build configurations extend packages/tsconfig/base.json.",
@@ -102,53 +112,63 @@
       "export_rules": "Named exports are required. Default exports are only used if required by external API contracts. Exported functions must declare explicit return types.",
       "type_location_rules": "Three-tier model: Domain types live in @battleship/types; package-scoped types live in src/types.ts extending domain types; implementation-private types are declared inline."
     },
-    "node_server_conventions": {
-      "framework": "Express 5.x on Node.js 22",
-      "app_assembly": "app.ts creates and exports the Express application. index.ts imports and calls .listen(). This separates port binding from initialization to allow test importing.",
-      "routing_pattern": "One *Router.ts file per domain, mounted in app.ts under a path prefix.",
-      "controllers_pattern": "Controllers are factory functions returning an object of handler methods.",
-      "middleware_rules": "bodyParser.json() applied per-router, not globally. cors() applied globally. Request logging applied globally. errorHandler registered last.",
-      "logging_standard": "Structured JSON logs using Pino via a thin wrapper in @battleship/util. No console.log in application code. local development piped through pino-pretty.",
-      "error_handling": "No try/catch in route handlers. Express 5 auto-forwards thrown errors to errorHandler middleware. Custom error classes in @battleship/types extend AppError and carry a statusCode."
+      "client_react_typescript": {
+        "testing_framework": "React Testing Library (RTL) for component testing from user perspective; MSW 2.x for API mocking at network layer.",
+        "component_conventions": "Functional components only. Arrow function syntax with destructured props. No React.FC. Explicit React.JSX.Element return type. App.tsx must stay thin.",
+        "prop_typing": "Name prop interfaces with a Props suffix.",
+        "hook_colocation": "Co-locate hooks with the components that own them (e.g. src/game/useGameState.ts with src/game/GameBoard.tsx). Only promote to shared hooks/ if used by multiple features.",
+        "styling_system": "Tailwind CSS is the sole styling system. CSS variables in HSL format define theme tokens to support dark/light modes. No styled-components or CSS modules.",
+        "primitive_components": "shadcn/ui is the standard library. Primitives are copied as source files into src/components/ui/ and normalized (cn helper, import paths).",
+        "styling_utilities": "clsx, tailwind-merge, and class-variance-authority combined into a single cn() helper. CVA is used for variant-driven leaf/atomic components. Components must accept external className overrides.",
+        "global_stylesheets": "index.css is restricted to CSS reset, font-face declarations, Tailwind @layer base directives, and CSS custom properties Tailwind cannot express.",
+        "state_management_hierarchy": "Local state (useState) is the default. Server state is managed solely by TanStack Query (no useEffect for API data fetching; use useMutation with invalidation). Shared client state uses small, domain-scoped Zustand stores with selector-based subscriptions."
+      }
     },
-    "python_platform_baseline": {
-      "runtime": "Python 3.13",
-      "package_management": "uv is the standard manager. Commit uv.lock and use frozen sync in CI. requires-python >=3.13,<3.14.",
-      "type_safety": "Pyright in strict mode. Explicit return types on exported/public functions and methods.",
-      "boundary_validation": "Use Pydantic v2 models for all inter-system boundaries. Parse, don't cast. Settings and environment use pydantic-settings.",
-      "linting_formatting": "Ruff is the only formatter and primary linter. Configurations are shared at the root.",
-      "api_wire_contract": "Committed OpenAPI document (YAML or JSON) is the single source of truth. FastAPI app app.openapi() output is drift-checked in CI. Downstream packages codegen from this spec."
+      "python_platform_conventions": {
+        "python_platform_baseline": {
+          "runtime": "Python 3.13",
+          "package_management": "uv is the standard manager. Commit uv.lock and use frozen sync in CI. requires-python >=3.13,<3.14.",
+          "type_safety": "Pyright in strict mode. Explicit return types on exported/public functions and methods.",
+          "boundary_validation": "Use Pydantic v2 models for all inter-system boundaries. Parse, don't cast. Settings and environment use pydantic-settings.",
+          "linting_formatting": "Ruff is the only formatter and primary linter. Configurations are shared at the root.",
+          "api_wire_contract": "Committed OpenAPI document (YAML or JSON) is the single source of truth. FastAPI app app.openapi() output is drift-checked in CI. Downstream packages codegen from this spec."
+        },    
+        "python_backend": {
+          "runtime": "Python 3.13",
+          "package_manager": "uv",
+          "framework": "FastAPI",
+          "orm": "SQLAlchemy 2.x",
+          "linter_formatter": "Ruff"
+        },
+        "python_server_conventions": {
+          "framework": "FastAPI (async-first)",
+          "app_assembly": "Application factory or module-level app that returns an importable ASGI app separate from Uvicorn startup.",
+          "routing_pattern": "One APIRouter per domain, mounted under path prefixes.",
+          "controllers_pattern": "Thin route handlers parsing/validating input, calling a services/ layer, and mapping results. Heavy logic in services/. FastAPI Depends for DI.",
+          "middleware_rules": "CORS, request/correlation ID, and body size limits applied deliberately.",
+          "logging_standard": "Structured JSON logs using structlog or standard logging with JSON formatter. Log correlation fields (requestId, gameId) aligned with Node services.",
+          "error_handling": "Single exception handler mapping exceptions to HTTP status codes and stable JSON error bodies. Operational vs unexpected error distinction.",
+          "database_integration": "SQLAlchemy 2.x with Alembic migrations. Postgres in production; SQLite in test. Setup/teardown runs migrations before tests and destroys connections after."
+        },
+        "python_domain_stubs": {
+          "python_ai_agents": "CrewAI / LangGraph with Pydantic models for tool/graph inputs and outputs, observability field alignment, and mock fixtures.",
+          "python_cli_tools": "Typer with Pydantic CLI payloads, help/UX consistency, and distribution via uv scripts.",
+          "python_etl_data": "Polars lazy/eager strategy, Pydantic validation at pipeline boundaries, and testing with golden files."
+        }
+      }
+  },
+  "generation_conventions": {
+    "capability_manifest": {
+      "location": "./identity/generation/capability-manifest.json",
+      "regeneration": "manual",
+      "script": "./identity/generation/scripts/generate-manifest.mjs",
+      "ci_sync": false
     },
-    "python_server_conventions": {
-      "framework": "FastAPI (async-first)",
-      "app_assembly": "Application factory or module-level app that returns an importable ASGI app separate from Uvicorn startup.",
-      "routing_pattern": "One APIRouter per domain, mounted under path prefixes.",
-      "controllers_pattern": "Thin route handlers parsing/validating input, calling a services/ layer, and mapping results. Heavy logic in services/. FastAPI Depends for DI.",
-      "middleware_rules": "CORS, request/correlation ID, and body size limits applied deliberately.",
-      "logging_standard": "Structured JSON logs using structlog or standard logging with JSON formatter. Log correlation fields (requestId, gameId) aligned with Node services.",
-      "error_handling": "Single exception handler mapping exceptions to HTTP status codes and stable JSON error bodies. Operational vs unexpected error distinction.",
-      "database_integration": "SQLAlchemy 2.x with Alembic migrations. Postgres in production; SQLite in test. Setup/teardown runs migrations before tests and destroys connections after."
-    },
-    "client_react_typescript": {
-      "testing_framework": "React Testing Library (RTL) for component testing from user perspective; MSW 2.x for API mocking at network layer.",
-      "component_conventions": "Functional components only. Arrow function syntax with destructured props. No React.FC. Explicit React.JSX.Element return type. App.tsx must stay thin.",
-      "prop_typing": "Name prop interfaces with a Props suffix.",
-      "hook_colocation": "Co-locate hooks with the components that own them (e.g. src/game/useGameState.ts with src/game/GameBoard.tsx). Only promote to shared hooks/ if used by multiple features.",
-      "styling_system": "Tailwind CSS is the sole styling system. CSS variables in HSL format define theme tokens to support dark/light modes. No styled-components or CSS modules.",
-      "primitive_components": "shadcn/ui is the standard library. Primitives are copied as source files into src/components/ui/ and normalized (cn helper, import paths).",
-      "styling_utilities": "clsx, tailwind-merge, and class-variance-authority combined into a single cn() helper. CVA is used for variant-driven leaf/atomic components. Components must accept external className overrides.",
-      "global_stylesheets": "index.css is restricted to CSS reset, font-face declarations, Tailwind @layer base directives, and CSS custom properties Tailwind cannot express.",
-      "state_management_hierarchy": "Local state (useState) is the default. Server state is managed solely by TanStack Query (no useEffect for API data fetching; use useMutation with invalidation). Shared client state uses small, domain-scoped Zustand stores with selector-based subscriptions."
-    },
-    "validation_and_quality": {
-      "accessibility_bar": "Target WCAG 2.2 AA for internal tools. Enforce eslint-plugin-jsx-a11y and runtime checks (@axe-core/playwright) on built previews in CI. Focus/keyboard order must match visual layout.",
-      "privacy_and_security": "No real secrets, passwords, or host credentials in git. Use fake values in docs (e.g. sk-test-..., REDACTED, ****). Gitleaks is enforced in CI. Optional local private notes folder gitignored.",
-      "branch_standards": "Default branch is main. Topic branch prefixes: feature/, fix/, chore/, docs/ followed by a kebab-case slug. Enforced by validate workflow in CI."
-    },
-    "python_domain_stubs": {
-      "python_ai_agents": "CrewAI / LangGraph with Pydantic models for tool/graph inputs and outputs, observability field alignment, and mock fixtures.",
-      "python_cli_tools": "Typer with Pydantic CLI payloads, help/UX consistency, and distribution via uv scripts.",
-      "python_etl_data": "Polars lazy/eager strategy, Pydantic validation at pipeline boundaries, and testing with golden files."
+    "scaffold_config": {
+      "schema": "./identity/generation/scaffold-config.schema.json",
+      "example": "./identity/generation/examples/react-node-monorepo.json"
     }
+  },
+  "uncategorized": {
   }
 }

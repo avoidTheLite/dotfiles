@@ -1,0 +1,8 @@
+import { describe, expect, it } from 'vitest';
+import { getHelloMessage } from './helloService.ts';
+
+describe('getHelloMessage', () => {
+  it('includes the project name', () => {
+    expect(getHelloMessage('demo').message).toContain('demo');
+  });
+});
