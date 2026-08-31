@@ -35,6 +35,9 @@ dotfiles/
 │   ├── workspace-standards.json # standards source of truth (JSON)
 │   ├── scaffolding/            # turbo/plop templates for monorepo generation
 │   └── generation/             # capability manifest + example JSON configs
+├── agent-skills/
+│   ├── skills/                 # reusable agent skills (SKILL.md)
+│   └── prompts/                # portable copies of those skills
 ├── scripts/
 │   ├── install.sh
 │   ├── init-project.sh
@@ -103,7 +106,7 @@ Do not run `turbo install`. That uses a global Turbo binary (often an older 2.5.
 dotfiles install ./my-app --config ./scaffold.json
 ```
 
-The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders a pnpm + Turborepo workspace with `apps/web` (React 18, Vite, Tailwind) and `apps/api` (Express 5). After install, `pnpm exec turbo gen` can add another frontend or Node service. See [identity/scaffolding/README.md](identity/scaffolding/README.md).
+The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders a pnpm + Turborepo workspace with `apps/web` (React 18, Vite, Tailwind) and `apps/api` (Express 5). After install, `pnpm exec turbo gen` can add another frontend or Node service. See [identity/scaffolding/README.md](identity/scaffolding/README.md). Agents should follow [agent-skills/skills/scaffold-monorepo/SKILL.md](agent-skills/skills/scaffold-monorepo/SKILL.md) instead of writing a monorepo by hand.
 
 ## Updating base configs
 
