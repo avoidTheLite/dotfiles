@@ -95,6 +95,8 @@ pnpm install
 pnpm dev
 ```
 
+Do not run `turbo install`. That uses a global Turbo binary (often an older 2.5.x) before dependencies exist, so you will see a missing lockfile and a missing `install` task. `pnpm install` creates the lockfile and installs the repo's Turbo 2.10.x; after that, use `pnpm exec turbo` or the root `pnpm` scripts.
+
 `--example` uses [identity/generation/examples/react-node-monorepo.json](identity/generation/examples/react-node-monorepo.json). To supply your own arguments:
 
 ```sh
