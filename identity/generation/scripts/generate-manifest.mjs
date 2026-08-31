@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Regenerates identity/generation/capability-manifest.json from the template tree.
- * Regeneration is manual (see generation_conventions in workspace-standards.json).
+ * Validates and formats identity/generation/capability-manifest.json.
+ * Ensures each generator's "source" path exists, then rewrites the file with stable JSON formatting.
  */
 import fs from 'node:fs';
 import path from 'node:path';
