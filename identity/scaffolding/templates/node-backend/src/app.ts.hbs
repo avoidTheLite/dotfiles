@@ -1,0 +1,13 @@
+import express from 'express';
+import cors from 'cors';
+import { errorHandler, requestLogger } from '{{scope}}/util';
+import { healthRouter } from './health/healthRouter.ts';
+import { helloRouter } from './hello/helloRouter.ts';
+
+export const app = express();
+
+app.use(cors());
+app.use(requestLogger);
+app.use('/health', healthRouter);
+app.use('/api', helloRouter);
+app.use(errorHandler);

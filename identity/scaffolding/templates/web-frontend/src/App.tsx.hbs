@@ -1,0 +1,34 @@
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import type { HelloResponse } from '{{scope}}/types';
+
+const loadHello = async (): Promise<string> => {
+  const response = await fetch('/api/hello');
+  if (!response.ok) {
+    throw new Error(`API returned ${response.status}`);
+  }
+  const payload = (await response.json()) as HelloResponse;
+  return payload.message;
+};
+
+export const App = (): JSX.Element => {
+  const [message, setMessage] = useState('Loading…');
+
+  useEffect(() => {
+    void loadHello()
+      .then(setMessage)
+      .catch(() => {
+        setMessage('API is not running. Start the Node service (apps/api) and retry.');
+      });
+  }, []);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-8 text-slate-100">
+      <section className="max-w-xl space-y-4">
+        <p className="text-sm uppercase tracking-wide text-slate-400">{{projectName}}</p>
+        <h1 className="text-3xl font-semibold">React app is ready</h1>
+        <p className="text-slate-300">{message}</p>
+      </section>
+    </main>
+  );
+};

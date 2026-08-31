@@ -1,0 +1,9 @@
+const parsedPort = Number.parseInt(process.env.PORT ?? '', 10);
+const port =
+  Number.isInteger(parsedPort) && parsedPort >= 0 && parsedPort <= 65535 ? parsedPort : 3000;
+
+export const env = {
+  PORT: port,
+  LOG_LEVEL: process.env.LOG_LEVEL ?? 'info',
+  PROJECT_NAME: process.env.PROJECT_NAME ?? '{{projectName}}',
+};
