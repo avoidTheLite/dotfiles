@@ -100,6 +100,7 @@ echo "detected os: ${os_name}"
 link_file "${SOURCE_SETTINGS}" "${code_settings}" "vscode"
 link_file "${SOURCE_SETTINGS}" "${cursor_settings}" "cursor"
 
+# Symlink dotfiles CLI if it exists
 DOTFILES_CLI="${DOTFILES_DIR}/scripts/dotfiles"
 if [ -f "${DOTFILES_CLI}" ]; then
   link_file "${DOTFILES_CLI}" "${HOME}/.local/bin/dotfiles" "dotfiles CLI"
