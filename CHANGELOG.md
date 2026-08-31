@@ -5,6 +5,7 @@ This file is a running log of what changed in this repository, in plain language
 ## Unreleased
 
 - Added an MVP **turbo/plop code generator**: `dotfiles install --config <file.json>` copies generators into a working directory and scaffolds a pnpm + Turborepo monorepo with a React (Vite + Tailwind) app and an Express 5 Node service. Templates live under `identity/scaffolding/`; the example config is `identity/generation/examples/react-node-monorepo.json`.
+- Fixed the `dotfiles` CLI wrapper so a symlink from `~/.local/bin/dotfiles` still loads `scripts/dotfiles.mjs` from the repository.
 - Updated `identity/workspace-standards.json` to version 2.1.0 with turbo generator mappings, a capability manifest, and generation conventions for the CLI JSON workflow.
 - Allow `cursor/` topic branches in `config/branch-standards.json` so Cloud Agent PRs pass the branch-name check.
 

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -121,4 +122,15 @@ test('escapes description so generated package.json stays valid', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(targetDir, 'package.json'), 'utf8'));
   assert.equal(pkg.description, description);
   assert.equal(escapeJsonString(description), 'Acme \\"demo\\" \\\\ repo\\nline two');
+});
+
+test('CLI wrapper follows a PATH symlink to the repo copy of dotfiles.mjs', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-bin-'));
+  const binDir = path.join(tmp, '.local', 'bin');
+  fs.mkdirSync(binDir, { recursive: true });
+  const linkedCli = path.join(binDir, 'dotfiles');
+  fs.symlinkSync(path.join(dotfilesRoot, 'scripts', 'dotfiles'), linkedCli);
+  const output = execFileSync(linkedCli, ['--help'], { encoding: 'utf8' });
+  assert.match(output, /dotfiles install \[target-dir\] --config/);
+  assert.doesNotMatch(output, /Cannot find module/);
 });

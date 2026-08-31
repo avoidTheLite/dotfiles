@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
-# Wrapper for the dotfiles Node.js CLI
+# Wrapper for the dotfiles Node.js CLI.
+# Follows the install.sh symlink (~/.local/bin/dotfiles -> this file) so Node
+# loads scripts/dotfiles.mjs from the repository, not from ~/.local/scripts/.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source="${BASH_SOURCE[0]:-$0}"
+while [ -L "${source}" ]; do
+  dir="$(cd "$(dirname "${source}")" && pwd)"
+  target="$(readlink "${source}")"
+  case "${target}" in
+    /*) source="${target}" ;;
+    *) source="${dir}/${target}" ;;
+  esac
+done
+
+ROOT="$(cd "$(dirname "${source}")/.." && pwd)"
 node "${ROOT}/scripts/dotfiles.mjs" "$@"
