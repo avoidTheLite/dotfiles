@@ -148,6 +148,11 @@ export function normalizeConfig(raw) {
       ? input.description
       : `${projectName} monorepo`;
 
+  if (/["\\\r\n\t]/u.test(description)) {
+    throw new Error(
+      'Config "description" must not include quotes, backslashes, tabs, or newlines (used in JSON templates without escaping)',
+    );
+  }
   const apps = Array.isArray(input.apps) ? input.apps : DEFAULT_APPS;
   if (apps.length === 0) {
     throw new Error('Config "apps" must contain at least one app');
