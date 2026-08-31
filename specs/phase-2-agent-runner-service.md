@@ -889,8 +889,10 @@ CREATE TABLE pending_async_tasks (
 ## 14. Logging & the Dispatch Log
 
 - Every dispatch (successful or failed) produces:
-  - a structured Pino JSON log line (fields: `threadTs`, `intent`,
-    `skillsApplied`, `agentChosen`, `outcome`, `attempt`), and
+  - a structured Pino JSON log line (fields: `dispatchId` (the
+    `dispatch_log.id` for this dispatch, once known — see the
+    traceability note below), `threadTs`, `intent`, `skillsApplied`,
+    `agentChosen`, `outcome`, `attempt`), and
   - a `dispatch_log` row (§8), which is what makes "log every dispatch
     decision" queryable rather than just grep-able in log files.
 - The `reasoning` column exists now, nullable, specifically so Phase 3's
@@ -903,6 +905,15 @@ CREATE TABLE pending_async_tasks (
   underlying error fields** (see §15's diagnosability policy) — the Pino
   log is not a superset of information the Slack reply lacks; it's a
   machine-queryable copy of the same facts.
+- **Traceability requirement (resolved, [§18.13](#18-open-design-decisions)):**
+  every logged event must be traceable back to the full prompt/output it
+  corresponds to, not just describe it in summary. Concretely: the Pino log
+  line and its `dispatch_log` row share `dispatchId`/`id`, and
+  `dispatch_artifacts.dispatch_id` is a foreign key back to that same
+  `dispatch_log.id` (schema below) — so a single id (already logged at
+  dispatch time) is enough to join a Pino log entry, its `dispatch_log`
+  row, and its full `dispatch_artifacts` prompt/response, with no separate
+  correlation step needed.
 
 **Prompt/output comparison & routing analytics (new, addresses "we haven't
 talked about comparing outputs"):** the `dispatch_log` row above is
@@ -1138,11 +1149,18 @@ the still-open ones called out explicitly rather than guessed.
     experimental — is documented in §7 as a starting heuristic for Phase
     3's decision engine. Not enforced in Phase 2 code; `--agent` stays a
     required explicit input (§1).
-13. **Prompt/output comparison tooling shape — Still open (new).** The
-    data model for comparing adapter/skill behavior is defined (the
-    `dispatch_artifacts` table, §14), but the presentation layer isn't —
-    static report, small Express view, CLI script, or something else —
-    flagging for your input once there's enough data to make that concrete.
+13. **Prompt/output comparison tooling shape — Resolved as a requirement,
+    design still open.** The presentation layer (static report, small
+    Express view, CLI script, or something else) is intentionally left
+    vague — it needs real design work once there's data to build against.
+    What is settled now is the one hard requirement the design must meet:
+    **every logged event must tie back directly to its full prompt/output
+    entry** — no separate correlation step, no guessing which log line
+    matches which `dispatch_artifacts` row. The `dispatchId` field on the
+    Pino log line and the `dispatch_id` foreign key on `dispatch_artifacts`
+    (both §14) already satisfy this by sharing `dispatch_log.id`; whatever
+    comparison tool gets built later is expected to use that same join
+    rather than inventing a new linking scheme.
 
 ## 19. Traceability to Phase 2 Exit Criteria
 
@@ -1163,8 +1181,9 @@ the still-open ones called out explicitly rather than guessed.
 
 ---
 
-_This document is a draft for iteration. Item #13 in §18 (prompt/output
-comparison tooling shape) is still open — everything else has been
-resolved per your feedback. Once that's settled, this file is the handoff
-artifact for the implementing agent — no further scope should need
-inventing at implementation time._
+_This document is a draft for iteration. All items in §18 are now
+resolved for Phase 2 purposes — §18.13's comparison-tooling presentation
+layer is deliberately left as a vague future design (Phase 2 only builds
+the underlying data model and traceability, not a dashboard/UI, per §14).
+This file is the handoff artifact for the implementing agent — no further
+scope should need inventing at implementation time._
