@@ -6,6 +6,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { componentsSourceDir, installComponents, UI_DIR_SEGMENTS } from './components.mjs';
 
 const APP_TYPE_TO_TEMPLATE = {
   frontend_app: 'web-frontend',
@@ -258,6 +259,10 @@ export function transferGenerators({ targetDir, dotfilesRoot }) {
   if (fs.existsSync(plopSource)) {
     fs.copyFileSync(plopSource, path.join(targetDir, 'plopfile.mjs'));
   }
+  const uiSource = componentsSourceDir(dotfilesRoot);
+  if (fs.existsSync(uiSource)) {
+    copyDirectory(uiSource, path.join(destGenerators, 'templates', 'ui-components'));
+  }
 }
 
 /**
@@ -318,6 +323,13 @@ export function installFromConfig({ targetDir, config, dotfilesRoot, force = fal
         data: { ...sharedData, name: app.name, appName: app.name },
       }),
     );
+    if (app.type === 'frontend_app') {
+      const uiResult = installComponents({
+        sourceDir: componentsSourceDir(dotfilesRoot),
+        targetDir: path.join(targetDir, 'apps', app.name, ...UI_DIR_SEGMENTS),
+      });
+      created.push(...uiResult.files);
+    }
   }
 
   return { config: normalized, created };

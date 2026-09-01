@@ -4,7 +4,37 @@
  *
  * @param {import('node-plop').NodePlopAPI} plop
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const generatorsDir = path.dirname(fileURLToPath(import.meta.url));
+
+function copyDirectory(sourceDir, destDir) {
+  if (!fs.existsSync(sourceDir)) {
+    throw new Error(`UI component templates not found: ${sourceDir}`);
+  }
+  fs.mkdirSync(destDir, { recursive: true });
+  const entries = fs.readdirSync(sourceDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const src = path.join(sourceDir, entry.name);
+    const dest = path.join(destDir, entry.name);
+    if (entry.isDirectory()) {
+      copyDirectory(src, dest);
+    } else {
+      fs.copyFileSync(src, dest);
+    }
+  }
+}
+
 export default function generator(plop) {
+  plop.setActionType('addUiComponents', (answers) => {
+    const sourceDir = path.join(generatorsDir, 'templates', 'ui-components');
+    const destDir = path.join(process.cwd(), 'apps', answers.name, 'src', 'components', 'ui');
+    copyDirectory(sourceDir, destDir);
+    return `vendored UI components to apps/${answers.name}/src/components/ui`;
+  });
+
   plop.setGenerator('frontend_app', {
     description: 'React 18 + Vite + Tailwind frontend app',
     prompts: [
@@ -19,6 +49,7 @@ export default function generator(plop) {
         base: 'templates/web-frontend',
         templateFiles: 'templates/web-frontend/**/*.hbs',
       },
+      { type: 'addUiComponents' },
     ],
   });
 

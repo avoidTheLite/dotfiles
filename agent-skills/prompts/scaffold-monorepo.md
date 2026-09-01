@@ -20,7 +20,7 @@ This repository already owns code generation. Run `dotfiles install`. Do not inv
 
 1. **Confirm names.** Need kebab-case `projectName`, npm `scope` (default `@` + projectName), and an empty target directory. Optional description and app names (default `web` + `api`). Restate and confirm before writing files.
 2. **Config.** `--config` is a **file path**, never a raw JSON string. Schema: `identity/generation/scaffold-config.schema.json`. Example: `identity/generation/examples/react-node-monorepo.json`. `packages` must be all of `tsconfig`, `types`, `util`. For the default layout, `dotfiles install --example --name my-app --scope @my-app` is enough.
-3. **Generate.** Prefer `dotfiles` on PATH (after `sh ~/dotfiles/scripts/install.sh`). Otherwise `~/dotfiles/scripts/dotfiles`. Use `--force` only if the user explicitly wants to overwrite.
+3. **Generate.** Prefer `dotfiles` on PATH (after `sh ~/dotfiles/scripts/install.sh`). Otherwise `~/dotfiles/scripts/dotfiles`. Use `--force` only if the user explicitly wants to overwrite. Generated frontends include `src/components/ui/` from `identity/components`. For an existing repo, `dotfiles install-components [target-dir]` vendors the same library (current repo when the path is omitted).
 4. **Install with pnpm.** Never `turbo install` (that hits a global Turbo, no lockfile, and a missing `install` task). Run `pnpm install`, then `pnpm exec turbo --version`, `pnpm test`, `pnpm dev`. Web is http://localhost:5173; API is port 3000.
 5. **Later apps.** `pnpm exec turbo gen frontend_app` or `pnpm exec turbo gen node_backend`.
 

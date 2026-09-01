@@ -4,6 +4,8 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- `dotfiles install` now vendors the standard UI component library into each generated frontend at `src/components/ui/`, including theme tokens, Radix/CVA dependencies, and a starter App that uses Button and Card.
+- `dotfiles install-components` accepts an optional target directory and otherwise installs into the current repo (`apps/<frontend>/src/components/ui`, or `src/components/ui`).
 - Introduced a pre-configured standard UI component library (Button, Input, Label, Checkbox, Dialog, DropdownMenu, Card) under `identity/components/` following TypeScript client style guide specifications.
 - Added a `dotfiles` command-line interface (`scripts/dotfiles` and `scripts/dotfiles.mjs`) supporting `install-components` and `sync-components` commands to easily install, check for updates, and sync standard components with downstream repositories, including supporting dry-run modes, force overwrites, and automated weekly sync scaffolding.
 - Updated Machine Setup (`scripts/install.sh`) to automatically install/symlink the new `dotfiles` CLI.

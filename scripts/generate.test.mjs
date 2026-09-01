@@ -6,6 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { escapeJsonString, installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
+import {
+  installComponents,
+  resolveComponentInstallTargets,
+} from './lib/components.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dotfilesRoot = path.resolve(__dirname, '..');
@@ -79,6 +83,22 @@ test('installFromConfig renders a React + Express monorepo', () => {
 
   const leftovers = leftoverHandlebars(targetDir);
   assert.deepEqual(leftovers, []);
+
+  const uiDir = path.join(targetDir, 'apps/web/src/components/ui');
+  assert.ok(fs.existsSync(path.join(uiDir, 'Button.tsx')));
+  assert.ok(fs.existsSync(path.join(uiDir, 'Card.tsx')));
+  assert.ok(fs.existsSync(path.join(uiDir, 'utils.ts')));
+  assert.ok(fs.existsSync(path.join(uiDir, '.dotfiles-meta.json')));
+  const uiMeta = JSON.parse(fs.readFileSync(path.join(uiDir, '.dotfiles-meta.json'), 'utf8'));
+  assert.equal(uiMeta.component_library_version, '1.4.0');
+  const appSrc = fs.readFileSync(path.join(targetDir, 'apps/web/src/App.tsx'), 'utf8');
+  assert.match(appSrc, /from '\.\/components\/ui\/Button\.tsx'/);
+  assert.ok(webPkg.dependencies['class-variance-authority']);
+  assert.ok(webPkg.dependencies.clsx);
+  assert.ok(webPkg.dependencies['tailwind-merge']);
+  assert.ok(
+    fs.existsSync(path.join(targetDir, 'turbo/generators/templates/ui-components/Button.tsx')),
+  );
 });
 
 test('rejects unknown app types', () => {
@@ -132,5 +152,55 @@ test('CLI wrapper follows a PATH symlink to the repo copy of dotfiles.mjs', () =
   fs.symlinkSync(path.join(dotfilesRoot, 'scripts', 'dotfiles'), linkedCli);
   const output = execFileSync(linkedCli, ['--help'], { encoding: 'utf8' });
   assert.match(output, /dotfiles install \[target-dir\] --config/);
+  assert.match(output, /dotfiles install-components \[target-dir\]/);
   assert.doesNotMatch(output, /Cannot find module/);
+});
+
+const cliPath = path.join(dotfilesRoot, 'scripts', 'dotfiles');
+
+test('CLI install-components vendors into an explicit target directory', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-target-'));
+  const target = path.join(tmp, 'custom-ui');
+  const output = execFileSync(cliPath, ['install-components', target], { encoding: 'utf8' });
+  assert.match(output, /Installed standard UI components/);
+  assert.ok(fs.existsSync(path.join(target, 'Button.tsx')));
+  assert.ok(fs.existsSync(path.join(target, 'utils.ts')));
+  assert.ok(fs.existsSync(path.join(target, '.dotfiles-meta.json')));
+});
+
+test('CLI install-components defaults to the current repo frontend ui dir', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-cwd-'));
+  fs.mkdirSync(path.join(tmp, 'apps', 'web'), { recursive: true });
+  fs.writeFileSync(
+    path.join(tmp, 'apps', 'web', 'package.json'),
+    JSON.stringify({ name: '@tmp/web', dependencies: { react: '18.3.1' } }),
+  );
+  const output = execFileSync(cliPath, ['install-components'], {
+    cwd: tmp,
+    encoding: 'utf8',
+  });
+  assert.match(output, /apps\/web\/src\/components\/ui/);
+  assert.ok(fs.existsSync(path.join(tmp, 'apps/web/src/components/ui/Button.tsx')));
+});
+
+test('CLI install-components refuses the dotfiles source repo without a target', () => {
+  assert.throws(
+    () =>
+      execFileSync(cliPath, ['install-components'], {
+        cwd: dotfilesRoot,
+        encoding: 'utf8',
+      }),
+    /Refusing to vendor/,
+  );
+});
+
+test('resolveComponentInstallTargets prefers existing vendored dirs', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-resolve-'));
+  const existing = path.join(tmp, 'src', 'components', 'ui');
+  installComponents({
+    sourceDir: path.join(dotfilesRoot, 'identity', 'components'),
+    targetDir: existing,
+  });
+  const targets = resolveComponentInstallTargets({ repoRoot: tmp });
+  assert.deepEqual(targets, [existing]);
 });

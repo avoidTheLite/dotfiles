@@ -33,6 +33,7 @@ dotfiles/
 │   └── branch-standards.json   # this repo’s branch name regex; copy per project
 ├── identity/
 │   ├── workspace-standards.json # standards source of truth (JSON)
+│   ├── components/             # vendored UI primitives (Button, Card, …)
 │   ├── scaffolding/            # turbo/plop templates for monorepo generation
 │   └── generation/             # capability manifest + example JSON configs
 ├── agent-skills/
@@ -106,7 +107,21 @@ Do not run `turbo install`. That uses a global Turbo binary (often an older 2.5.
 dotfiles install ./my-app --config ./scaffold.json
 ```
 
-The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders a pnpm + Turborepo workspace with `apps/web` (React 18, Vite, Tailwind) and `apps/api` (Express 5). After install, `pnpm exec turbo gen` can add another frontend or Node service. See [identity/scaffolding/README.md](identity/scaffolding/README.md). Agents should follow [agent-skills/skills/scaffold-monorepo/SKILL.md](agent-skills/skills/scaffold-monorepo/SKILL.md) instead of writing a monorepo by hand.
+The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders a pnpm + Turborepo workspace with `apps/web` (React 18, Vite, Tailwind) and `apps/api` (Express 5). Each generated frontend also gets the standard UI component library vendored at `src/components/ui/` (Button, Input, Label, Checkbox, Dialog, DropdownMenu, Card, plus `cn`). After install, `pnpm exec turbo gen` can add another frontend or Node service. See [identity/scaffolding/README.md](identity/scaffolding/README.md). Agents should follow [agent-skills/skills/scaffold-monorepo/SKILL.md](agent-skills/skills/scaffold-monorepo/SKILL.md) instead of writing a monorepo by hand.
+
+## Install the UI component library into an existing repo
+
+`dotfiles install-components` vendors `identity/components` as source files (not an npm package):
+
+```sh
+# Current repo: apps/<frontend>/src/components/ui, or src/components/ui
+dotfiles install-components
+
+# Explicit destination
+dotfiles install-components ./apps/web/src/components/ui
+```
+
+Use `dotfiles sync-components` later to pull updates and open a PR. See [identity/components/README.md](identity/components/README.md).
 
 ## Updating base configs
 
