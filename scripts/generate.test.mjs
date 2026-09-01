@@ -90,7 +90,7 @@ test('installFromConfig renders a React + Express monorepo', () => {
   assert.ok(fs.existsSync(path.join(uiDir, 'utils.ts')));
   assert.ok(fs.existsSync(path.join(uiDir, '.dotfiles-meta.json')));
   const uiMeta = JSON.parse(fs.readFileSync(path.join(uiDir, '.dotfiles-meta.json'), 'utf8'));
-  assert.equal(uiMeta.component_library_version, '1.4.0');
+  assert.equal(uiMeta.component_library_version, '1.4.1');
   const appSrc = fs.readFileSync(path.join(targetDir, 'apps/web/src/App.tsx'), 'utf8');
   assert.match(appSrc, /from '\.\/components\/ui\/Button\.tsx'/);
   assert.ok(webPkg.dependencies['class-variance-authority']);
