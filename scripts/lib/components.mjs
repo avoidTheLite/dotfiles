@@ -55,7 +55,7 @@ export function looksLikeDotfilesRoot(dir) {
  */
 export function readComponentLibraryMeta(sourceDir) {
   const metaPath = path.join(sourceDir, META_FILENAME);
-  let version = '1.4.0';
+  let version = 'unknown';
   let source = 'github.com/avoidTheLite/dotfiles';
   if (fs.existsSync(metaPath)) {
     try {
@@ -141,7 +141,9 @@ export function findExistingComponentDirs(root) {
         if (
           entry.name === 'node_modules' ||
           entry.name === '.git' ||
-          entry.name === 'turbo' ||
+          entry.name === '.turbo' ||
+          entry.name === '.next' ||
+          entry.name === 'build' ||
           entry.name === 'dist' ||
           entry.name === 'coverage'
         ) {

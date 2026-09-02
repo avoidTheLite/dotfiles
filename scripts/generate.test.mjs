@@ -3,11 +3,13 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { escapeJsonString, installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
 import {
+  findExistingComponentDirs,
   installComponents,
+  readComponentLibraryMeta,
   resolveComponentInstallTargets,
 } from './lib/components.mjs';
 
@@ -203,4 +205,87 @@ test('resolveComponentInstallTargets prefers existing vendored dirs', () => {
   });
   const targets = resolveComponentInstallTargets({ repoRoot: tmp });
   assert.deepEqual(targets, [existing]);
+});
+
+test('readComponentLibraryMeta uses unknown when source metadata is missing', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-meta-'));
+  assert.deepEqual(readComponentLibraryMeta(tmp), {
+    version: 'unknown',
+    source: 'github.com/avoidTheLite/dotfiles',
+  });
+});
+
+test('findExistingComponentDirs skips cache dirs but still scans turbo sources', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-scan-'));
+  const kept = path.join(tmp, 'turbo', 'generators', 'templates', 'ui-components');
+  const skipped = [
+    path.join(tmp, '.turbo', 'cache', 'ui-components'),
+    path.join(tmp, '.next', 'cache', 'ui-components'),
+    path.join(tmp, 'build', 'ui-components'),
+  ];
+
+  fs.mkdirSync(kept, { recursive: true });
+  fs.writeFileSync(path.join(kept, '.dotfiles-meta.json'), '{}');
+
+  for (const dir of skipped) {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, '.dotfiles-meta.json'), '{}');
+  }
+
+  assert.deepEqual(findExistingComponentDirs(tmp), [kept]);
+});
+
+test('generated turbo frontend vendoring rewrites .dotfiles-meta.json', async () => {
+  const targetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-gen-'));
+  installFromConfig({
+    targetDir,
+    config: { projectName: 'demo' },
+    dotfilesRoot,
+  });
+
+  const templateMetaPath = path.join(
+    targetDir,
+    'turbo',
+    'generators',
+    'templates',
+    'ui-components',
+    '.dotfiles-meta.json',
+  );
+  fs.writeFileSync(
+    templateMetaPath,
+    `${JSON.stringify(
+      {
+        component_library_version: '1.4.1',
+        tools_version: '1.4.1',
+        source: 'github.com/avoidTheLite/dotfiles',
+        last_synced: '2000-01-01',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  const generatedConfig = await import(pathToFileURL(path.join(targetDir, 'turbo/generators/config.js')));
+  const actionTypes = new Map();
+  generatedConfig.default({
+    setActionType(name, action) {
+      actionTypes.set(name, action);
+    },
+    setGenerator() {},
+  });
+
+  const previousCwd = process.cwd();
+  process.chdir(targetDir);
+  try {
+    actionTypes.get('addUiComponents')({ name: 'admin' });
+  } finally {
+    process.chdir(previousCwd);
+  }
+
+  const installedMeta = JSON.parse(
+    fs.readFileSync(path.join(targetDir, 'apps', 'admin', 'src', 'components', 'ui', '.dotfiles-meta.json'), 'utf8'),
+  );
+  assert.equal(installedMeta.component_library_version, '1.4.1');
+  assert.equal(installedMeta.source, 'github.com/avoidTheLite/dotfiles');
+  assert.equal(installedMeta.last_synced, new Date().toISOString().split('T')[0]);
 });

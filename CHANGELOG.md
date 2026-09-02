@@ -5,6 +5,7 @@ This file is a running log of what changed in this repository, in plain language
 ## Unreleased
 
 - `dotfiles install` now vendors the standard UI component library into each generated frontend at `src/components/ui/`, including theme tokens, Radix/CVA dependencies, and a starter App that uses Button and Card.
+- `dotfiles install-components` now falls back to an explicit `unknown` component-library version when source metadata is missing, skips common cache/build folders (`.turbo`, `.next`, `build`) while scanning for vendored UI dirs, and rewrites vendored `.dotfiles-meta.json` timestamps when Turbo generators add components later.
 - Replaced empty component prop interfaces with type aliases so generated apps pass the TypeScript ESLint `no-empty-object-type` rule.
 - `dotfiles install-components` accepts an optional target directory and otherwise installs into the current repo (`apps/<frontend>/src/components/ui`, or `src/components/ui`).
 - Introduced a pre-configured standard UI component library (Button, Input, Label, Checkbox, Dialog, DropdownMenu, Card) under `identity/components/` following TypeScript client style guide specifications.
