@@ -5,6 +5,11 @@ import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
+import {
+  componentsSourceDir,
+  installComponents,
+  resolveComponentInstallTargets,
+} from './lib/components.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,12 +50,14 @@ function printHelp() {
 Usage:
   dotfiles install [target-dir] --config <file.json>
   dotfiles generate [target-dir] --config <file.json>
-  dotfiles install-components <target-dir>
+  dotfiles install-components [target-dir]
   dotfiles sync-components
   dotfiles --help
 
 Install copies turbo/plop generators into the target directory, then renders
 a monorepo from the JSON config (React app + Node service by default).
+Frontend apps also receive the standard UI component library at
+src/components/ui/.
 
 Options:
   --config <path>   Path to a JSON object of generator inputs
@@ -66,7 +73,9 @@ Options for components:
   --force                           Force sync even if local vendored directory has uncommitted changes
 
 Commands for components:
-  install-components <target-dir>   Install standard base components to the target directory
+  install-components [target-dir]   Vendor standard UI components into a path,
+                                    or the current repo when omitted
+                                    (apps/<frontend>/src/components/ui, else src/components/ui)
   sync-components                   Pull latest standard base component updates and open a PR
 
 Example:
@@ -179,69 +188,52 @@ function main() {
   const command = args[0];
 
   if (command === 'install-components') {
-    const targetDirArg = args[1];
-    if (!targetDirArg) {
-      console.error('Error: Please specify a target directory.');
-      console.error('Usage: dotfiles install-components <target-dir>');
-      process.exit(1);
-    }
-
-    const targetDir = path.resolve(process.cwd(), targetDirArg);
-    const sourceDir = path.join(dotfilesRoot, 'identity', 'components');
-
-    if (!fs.existsSync(sourceDir)) {
-      console.error(`Error: Source components directory not found at ${sourceDir}`);
-      process.exit(1);
-    }
-
-    // Create target dir
-    fs.mkdirSync(targetDir, { recursive: true });
-
-    // Copy components (except .dotfiles-meta.json which we generate/update)
-    const files = fs.readdirSync(sourceDir);
-    for (const file of files) {
-      if (file === '.dotfiles-meta.json') continue;
-      const srcFile = path.join(sourceDir, file);
-      const destFile = path.join(targetDir, file);
-      const stat = fs.statSync(srcFile);
-
-      if (stat.isDirectory()) {
-        fs.mkdirSync(destFile, { recursive: true });
-        const subFiles = getFilesRecursively(srcFile);
-        for (const subFile of subFiles) {
-          const relPath = path.relative(srcFile, subFile);
-          const subDest = path.join(destFile, relPath);
-          fs.mkdirSync(path.dirname(subDest), { recursive: true });
-          fs.copyFileSync(subFile, subDest);
+    let explicitTarget = null;
+    for (let i = 1; i < args.length; i += 1) {
+      const arg = args[i];
+      if (arg === '--target') {
+        explicitTarget = args[i + 1] ?? null;
+        if (!explicitTarget) {
+          console.error('Error: --target requires a directory.');
+          process.exit(1);
         }
-      } else {
-        fs.copyFileSync(srcFile, destFile);
+        i += 1;
+      } else if (arg.startsWith('--target=')) {
+        explicitTarget = arg.slice('--target='.length);
+      } else if (arg.startsWith('-')) {
+        console.error(`Unknown option: ${arg}`);
+        console.error('Usage: dotfiles install-components [target-dir]');
+        process.exit(1);
+      } else if (!explicitTarget) {
+        explicitTarget = arg;
       }
     }
 
-    // Read dotfiles source meta to get version
-    const sourceMetaPath = path.join(sourceDir, '.dotfiles-meta.json');
-    let version = '1.4.0';
-    let sourceUrl = 'github.com/avoidTheLite/dotfiles';
-    if (fs.existsSync(sourceMetaPath)) {
-      try {
-        const meta = JSON.parse(fs.readFileSync(sourceMetaPath, 'utf8'));
-        version = meta.component_library_version || version;
-        sourceUrl = meta.source || sourceUrl;
-      } catch {}
+    const sourceDir = componentsSourceDir(dotfilesRoot);
+    let targets;
+    try {
+      targets = resolveComponentInstallTargets({
+        repoRoot: process.cwd(),
+        explicitTarget,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error: ${message}`);
+      console.error('Usage: dotfiles install-components [target-dir]');
+      process.exit(1);
     }
 
-    // Write .dotfiles-meta.json in target dir
-    const destMetaPath = path.join(targetDir, '.dotfiles-meta.json');
-    const targetMeta = {
-      component_library_version: version,
-      tools_version: version,
-      source: sourceUrl,
-      last_synced: new Date().toISOString().split('T')[0]
-    };
-    fs.writeFileSync(destMetaPath, JSON.stringify(targetMeta, null, 2) + '\n', 'utf8');
-
-    console.log(`Successfully installed standard base components to ${targetDirArg} (v${version})!`);
+    try {
+      for (const targetDir of targets) {
+        const result = installComponents({ sourceDir, targetDir });
+        const display = path.relative(process.cwd(), result.targetDir) || result.targetDir;
+        console.log(`Installed standard UI components to ${display} (v${result.version})`);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error: ${message}`);
+      process.exit(1);
+    }
     process.exit(0);
   }
 
@@ -256,7 +248,7 @@ function main() {
 
     if (!localMetaPath) {
       console.error('Error: No local .dotfiles-meta.json found in the current working directory hierarchy.');
-      console.error('Please run "dotfiles install-components <dir>" to initialize standard components.');
+      console.error('Please run "dotfiles install-components" (or pass a target directory) to initialize standard components.');
       process.exit(1);
     }
 

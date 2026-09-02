@@ -3,7 +3,8 @@
   "description": "Available turbo/plop generators shipped with this dotfiles repository.",
   "cli": {
     "install": "dotfiles install [target-dir] --config <file.json>",
-    "generate": "dotfiles generate [target-dir] --config <file.json>"
+    "generate": "dotfiles generate [target-dir] --config <file.json>",
+    "install_components": "dotfiles install-components [target-dir]"
   },
   "generators": [
     {
@@ -16,7 +17,7 @@
     {
       "id": "frontend_app",
       "status": "available",
-      "description": "React 18 + Vite + Tailwind CSS frontend app",
+      "description": "React 18 + Vite + Tailwind CSS frontend app with vendored UI components",
       "source": "./identity/scaffolding/templates/web-frontend",
       "destination": "apps/{{name}}"
     },

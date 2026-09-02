@@ -32,7 +32,7 @@ const TEMPLATE_GENERATORS = {
   'web-frontend': {
     id: 'frontend_app',
     status: 'available',
-    description: 'React 18 + Vite + Tailwind CSS frontend app',
+    description: 'React 18 + Vite + Tailwind CSS frontend app with vendored UI components',
     destination: 'apps/{{name}}',
   },
   'node-backend': {
@@ -94,6 +94,7 @@ const manifest = {
   cli: {
     install: 'dotfiles install [target-dir] --config <file.json>',
     generate: 'dotfiles generate [target-dir] --config <file.json>',
+    install_components: 'dotfiles install-components [target-dir]',
   },
   generators,
 };

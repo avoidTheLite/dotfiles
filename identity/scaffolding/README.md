@@ -24,4 +24,11 @@ From an empty directory:
 dotfiles install --config ~/dotfiles/identity/generation/examples/react-node-monorepo.json --name my-app --scope @my-app
 ```
 
-That command copies these generators into the target (`turbo/generators/`) and renders a starter monorepo from the JSON object. After `pnpm install`, `pnpm exec turbo gen` can add another frontend or Node service.
+That command copies these generators into the target (`turbo/generators/`) and renders a starter monorepo from the JSON object. Each frontend app also receives the standard UI component library at `src/components/ui/`. After `pnpm install`, `pnpm exec turbo gen` can add another frontend or Node service (new frontends get the same component library).
+
+To vendor the library into an existing repo without generating a new monorepo:
+
+```sh
+dotfiles install-components                  # current repo
+dotfiles install-components ./src/components/ui
+```

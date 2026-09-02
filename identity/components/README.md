@@ -60,4 +60,4 @@ Ensure your Tailwind styling is loaded with CSS variables matching the expected 
 
 ## Synchronization
 
-These components are managed and kept up-to-date using the `dotfiles sync-components` command. Refer to the root `README.md` or scripts section for CLI instructions.
+`dotfiles install` vendors this folder into every generated frontend at `src/components/ui/`. For an existing repo, run `dotfiles install-components` in the project root (or pass a target directory). Keep copies up to date with `dotfiles sync-components`. See the root [README](../../README.md).

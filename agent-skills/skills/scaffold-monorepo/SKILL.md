@@ -90,7 +90,14 @@ If `dotfiles` is not on `PATH`:
 ~/dotfiles/scripts/dotfiles install --example --name my-app --scope @my-app
 ```
 
-The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders the workspace. Use `--force` only when the user explicitly wants to overwrite a non-empty directory.
+The CLI copies turbo/plop generators into the target (`turbo/generators/`), renders the workspace, and vendors `identity/components` into each frontend at `src/components/ui/`. Use `--force` only when the user explicitly wants to overwrite a non-empty directory.
+
+To install the same library into an existing repo without generating a monorepo:
+
+```sh
+dotfiles install-components
+dotfiles install-components ./apps/web/src/components/ui
+```
 
 ### 4. Install and verify with pnpm
 
