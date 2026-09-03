@@ -6,7 +6,7 @@
       "type": "registry:lib",
       "title": "cn helper",
       "description": "Class-merging helper using clsx and tailwind-merge.",
-      "dependencies": ["clsx", "tailwind-merge"],
+      "dependencies": ["clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "files": [
         {
           "path": "utils.ts",
@@ -20,7 +20,7 @@
       "type": "registry:ui",
       "title": "Button",
       "description": "Variant-driven button primitive using Class Variance Authority.",
-      "dependencies": ["class-variance-authority", "clsx", "tailwind-merge"],
+      "dependencies": ["class-variance-authority@^0.7.1", "clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "registryDependencies": ["avoidTheLite/dotfiles/utils"],
       "files": [
         {
@@ -35,7 +35,7 @@
       "type": "registry:ui",
       "title": "Input",
       "description": "Styled text input primitive.",
-      "dependencies": ["clsx", "tailwind-merge"],
+      "dependencies": ["clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "registryDependencies": ["avoidTheLite/dotfiles/utils"],
       "files": [
         {
@@ -50,7 +50,7 @@
       "type": "registry:ui",
       "title": "Label",
       "description": "Accessible label primitive built on Radix UI.",
-      "dependencies": ["@radix-ui/react-label", "class-variance-authority", "clsx", "tailwind-merge"],
+      "dependencies": ["@radix-ui/react-label@^2.1.8", "class-variance-authority@^0.7.1", "clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "registryDependencies": ["avoidTheLite/dotfiles/utils"],
       "files": [
         {
@@ -65,7 +65,7 @@
       "type": "registry:ui",
       "title": "Checkbox",
       "description": "Accessible checkbox primitive built on Radix UI.",
-      "dependencies": ["@radix-ui/react-checkbox", "clsx", "tailwind-merge"],
+      "dependencies": ["@radix-ui/react-checkbox@^1.3.3", "clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "registryDependencies": ["avoidTheLite/dotfiles/utils"],
       "files": [
         {
@@ -80,7 +80,7 @@
       "type": "registry:ui",
       "title": "Dialog",
       "description": "Modal overlay and focus-trapped dialog built on Radix UI.",
-      "dependencies": ["@radix-ui/react-dialog", "clsx", "tailwind-merge"],
+      "dependencies": ["@radix-ui/react-dialog@^1.1.15", "clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "registryDependencies": ["avoidTheLite/dotfiles/utils"],
       "files": [
         {
@@ -95,7 +95,7 @@
       "type": "registry:ui",
       "title": "Dropdown Menu",
       "description": "Popover menu and items built on Radix UI.",
-      "dependencies": ["@radix-ui/react-dropdown-menu", "clsx", "tailwind-merge"],
+      "dependencies": ["@radix-ui/react-dropdown-menu@^2.1.16", "clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "registryDependencies": ["avoidTheLite/dotfiles/utils"],
       "files": [
         {
@@ -110,7 +110,7 @@
       "type": "registry:ui",
       "title": "Card",
       "description": "Composable card layout with header, content, and footer.",
-      "dependencies": ["clsx", "tailwind-merge"],
+      "dependencies": ["clsx@^2.1.1", "tailwind-merge@^3.4.0"],
       "registryDependencies": ["avoidTheLite/dotfiles/utils"],
       "files": [
         {

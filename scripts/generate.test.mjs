@@ -166,10 +166,10 @@ test('CLI install-components installs into an explicit target directory', () => 
   const target = path.join(tmp, 'custom-ui');
   const output = execFileSync(cliPath, ['install-components', target], { encoding: 'utf8' });
   assert.match(output, /Installed standard UI components via shadcn registry/);
-  assert.ok(fs.existsSync(path.join(target, 'Button.tsx')));
-  assert.ok(fs.existsSync(path.join(target, 'utils.ts')));
-  assert.ok(fs.existsSync(path.join(target, 'molecules', 'Field.tsx')));
-  assert.ok(!fs.existsSync(path.join(target, '.dotfiles-meta.json')));
+  assert.ok(fs.existsSync(path.join(target, 'src/components/ui/Button.tsx')));
+  assert.ok(fs.existsSync(path.join(target, 'src/components/ui/utils.ts')));
+  assert.ok(fs.existsSync(path.join(target, 'src/components/molecules/Field.tsx')));
+  assert.ok(!fs.existsSync(path.join(target, 'src/components/ui/.dotfiles-meta.json')));
 });
 
 test('CLI install-components defaults to the current repo frontend ui dir', () => {
@@ -177,7 +177,10 @@ test('CLI install-components defaults to the current repo frontend ui dir', () =
   fs.mkdirSync(path.join(tmp, 'apps', 'web'), { recursive: true });
   fs.writeFileSync(
     path.join(tmp, 'apps', 'web', 'package.json'),
-    JSON.stringify({ name: '@tmp/web', dependencies: { react: '18.3.1' } }),
+    JSON.stringify({
+      name: '@tmp/web',
+      dependencies: { react: '18.3.1', 'react-dom': '18.3.1' },
+    }),
   );
   const output = execFileSync(cliPath, ['install-components'], {
     cwd: tmp,
@@ -247,7 +250,21 @@ test('generated turbo frontend installs from the copied shadcn registry', async 
     setGenerator() {},
   });
 
-  fs.mkdirSync(path.join(targetDir, 'apps', 'admin'), { recursive: true });
+  const adminDir = path.join(targetDir, 'apps', 'admin');
+  fs.mkdirSync(adminDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(adminDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@demo/admin',
+        private: true,
+        type: 'module',
+        dependencies: { react: '^18.3.1', 'react-dom': '^18.3.1' },
+      },
+      null,
+      2,
+    )}\n`,
+  );
   const previousCwd = process.cwd();
   process.chdir(targetDir);
   try {

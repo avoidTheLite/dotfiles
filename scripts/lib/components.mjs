@@ -24,6 +24,78 @@ const SKIP_SCAN_DIRS = new Set([
   'coverage',
 ]);
 
+const DEFAULT_DEP_VERSIONS = {
+  clsx: '^2.1.1',
+  'tailwind-merge': '^3.4.0',
+  'class-variance-authority': '^0.7.1',
+  '@radix-ui/react-label': '^2.1.8',
+  '@radix-ui/react-checkbox': '^1.3.3',
+  '@radix-ui/react-dialog': '^1.1.15',
+  '@radix-ui/react-dropdown-menu': '^2.1.16',
+};
+
+/**
+ * @param {string} spec
+ * @returns {{ name: string, version: string | undefined }}
+ */
+function parseDependencySpec(spec) {
+  if (spec.startsWith('@')) {
+    const at = spec.indexOf('@', 1);
+    if (at === -1) {
+      return { name: spec, version: DEFAULT_DEP_VERSIONS[spec] };
+    }
+    return { name: spec.slice(0, at), version: spec.slice(at + 1) };
+  }
+  const at = spec.indexOf('@');
+  if (at === -1) {
+    return { name: spec, version: DEFAULT_DEP_VERSIONS[spec] };
+  }
+  return { name: spec.slice(0, at), version: spec.slice(at + 1) };
+}
+
+/**
+ * Record npm deps on the project package.json, then strip them from registry
+ * items so `shadcn add` copies files without running npm install.
+ *
+ * @param {string} builtDir
+ * @param {string} projectRoot
+ * @returns {void}
+ */
+export function mergeAndStripItemDependencies(builtDir, projectRoot) {
+  const collected = {};
+  for (const name of fs.readdirSync(builtDir)) {
+    if (!name.endsWith('.json') || name === 'registry.json') {
+      continue;
+    }
+    const fullPath = path.join(builtDir, name);
+    const item = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    for (const spec of item.dependencies ?? []) {
+      const parsed = parseDependencySpec(String(spec));
+      if (parsed.version) {
+        collected[parsed.name] = parsed.version;
+      }
+    }
+    if (item.dependencies || item.devDependencies) {
+      delete item.dependencies;
+      delete item.devDependencies;
+      fs.writeFileSync(fullPath, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
+    }
+  }
+
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath) || Object.keys(collected).length === 0) {
+    return;
+  }
+  const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  pkg.dependencies = pkg.dependencies ?? {};
+  for (const [name, version] of Object.entries(collected)) {
+    if (!pkg.dependencies[name] && !pkg.devDependencies?.[name]) {
+      pkg.dependencies[name] = version;
+    }
+  }
+  fs.writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
+}
+
 /**
  * @param {string} dotfilesRoot
  * @returns {string}
@@ -130,6 +202,18 @@ function githubItemName(githubItem) {
  * @returns {void}
  */
 export function localizeBuiltRegistry(builtDir) {
+  rewriteRegistryDependencies(builtDir, 'relative');
+}
+
+/**
+ * shadcn resolves `./item.json` against the project cwd, not the registry
+ * directory. Use absolute paths right before `shadcn add`.
+ *
+ * @param {string} builtDir
+ * @param {'relative' | 'absolute'} style
+ * @returns {void}
+ */
+export function rewriteRegistryDependencies(builtDir, style) {
   for (const name of fs.readdirSync(builtDir)) {
     if (!name.endsWith('.json') || name === 'registry.json') {
       continue;
@@ -140,9 +224,13 @@ export function localizeBuiltRegistry(builtDir) {
       continue;
     }
     item.registryDependencies = item.registryDependencies.map((dep) => {
-      const itemName = githubItemName(dep);
+      const raw = String(dep);
+      const itemName = githubItemName(raw.replace(/^\.\//, '').replace(/\.json$/, ''));
       const local = path.join(builtDir, `${itemName}.json`);
-      return fs.existsSync(local) ? `./${itemName}.json` : dep;
+      if (!fs.existsSync(local)) {
+        return dep;
+      }
+      return style === 'absolute' ? local : `./${itemName}.json`;
     });
     fs.writeFileSync(fullPath, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
   }
@@ -203,9 +291,9 @@ export function classifyInstallTarget(targetDir) {
 
   return {
     projectRoot: resolved,
-    uiDir: resolved,
-    moleculesDir: path.join(resolved, 'molecules'),
-    flattenUi: true,
+    uiDir: path.join(resolved, ...UI_DIR_SEGMENTS),
+    moleculesDir: path.join(resolved, ...MOLECULE_DIR_SEGMENTS),
+    flattenUi: false,
   };
 }
 
@@ -518,6 +606,8 @@ export function installComponents({
         uiDir,
         moleculesDir,
       });
+      rewriteRegistryDependencies(registryDir, 'absolute');
+      mergeAndStripItemDependencies(registryDir, projectRoot);
       addRegistryItem({
         projectRoot,
         registryDir,
