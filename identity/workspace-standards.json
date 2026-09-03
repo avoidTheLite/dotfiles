@@ -4,7 +4,7 @@
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
     "version": "2.1.0",
-    "last_updated": "2026-08-28",
+    "last_updated": "2026-09-01",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -72,8 +72,9 @@
           "default_backend_language": "node",
           "capability_manifest": "./identity/generation/capability-manifest.json",
           "cli": {
-            "install": "Copy turbo/plop generators into the working directory and render apps from a JSON config object.",
-            "command": "dotfiles install [target-dir] --config <file.json>"
+            "install": "Copy turbo/plop generators into the working directory, render apps from a JSON config object, and vendor identity/components into each frontend at src/components/ui/.",
+            "command": "dotfiles install [target-dir] --config <file.json>",
+            "install_components": "dotfiles install-components [target-dir]"
           }
         },
         "preferred_languages": {
