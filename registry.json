@@ -1,0 +1,6 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "dotfiles",
+  "homepage": "https://github.com/avoidTheLite/dotfiles",
+  "include": ["identity/components/registry.json"]
+}

@@ -1,63 +1,41 @@
 # Pre-configured Standard UI Components
 
-This folder contains the complete, pre-configured baseline of standard UI components for the identity domain, built on top of the specifications defined in our [client style guide](../../guides/client/typescript/STYLE_GUIDE.md).
+This folder is a [shadcn registry](https://ui.shadcn.com/docs/registry). Primitives live in `ui/`. Molecular components (composed from those primitives) live in `molecules/`. A root [`registry.json`](../../registry.json) includes this catalog so GitHub installs can pin a commit:
 
-These components are designed to be **vendored** directly into downstream projects (not added as live npm library dependencies), enabling teams to fully own and fine-tune their primitive styling while maintaining a strong baseline.
+```sh
+npx shadcn@latest add avoidTheLite/dotfiles/standard-ui#<git-sha>
+```
 
-## Included Components
+Validate the source registry with `npx shadcn@latest registry validate ./registry.json`.
 
-- **`Button`**: Flexible, variant-driven button primitive using Class Variance Authority (CVA).
-- **`Input`**: Controlled/uncontrolled styling-extended text input.
-- **`Label`**: Robust label primitive supporting peer focus and disabled state triggers, built on `@radix-ui/react-label`.
-- **`Checkbox`**: Accessible check control, built on `@radix-ui/react-checkbox`.
-- **`Dialog`**: Modal overlay and focus-trapped dialog layouts, built on `@radix-ui/react-dialog`.
-- **`DropdownMenu`**: Popover utility and custom item/sub-menus, built on `@radix-ui/react-dropdown-menu`.
-- **`Card`**: Highly composable layout container for sections, headers, descriptions, content, and footers.
+## Included items
+
+### Primitives (`ui/`)
+
+- **`button`**: Variant-driven button primitive using Class Variance Authority (CVA).
+- **`input`**: Styled text input.
+- **`label`**: Label primitive supporting peer focus and disabled state, built on `@radix-ui/react-label`.
+- **`checkbox`**: Accessible check control, built on `@radix-ui/react-checkbox`.
+- **`dialog`**: Modal overlay and focus-trapped dialog, built on `@radix-ui/react-dialog`.
+- **`dropdown-menu`**: Popover menu and items, built on `@radix-ui/react-dropdown-menu`.
+- **`card`**: Composable layout container for sections, headers, descriptions, content, and footers.
 - **`utils`**: The canonical `cn(...)` class-merging helper using `clsx` and `tailwind-merge`.
 
-## Prerequisites & Dependencies
+### Molecules (`molecules/`)
 
-To support these components, make sure the downstream repository installs the following npm dependencies:
+- **`field`**: Labeled input with optional description and error text.
+- **`confirm-dialog`**: Confirmation dialog composed from Dialog and Button.
+- **`empty-state`**: Empty-state card with an optional action button.
 
-```bash
-# Style utilities
-pnpm add class-variance-authority clsx tailwind-merge
+`standard-ui` installs every primitive and molecule.
 
-# Radix UI primitives
-pnpm add @radix-ui/react-label @radix-ui/react-checkbox @radix-ui/react-dialog @radix-ui/react-dropdown-menu
+## Installation
+
+`dotfiles install` and `dotfiles install-components` run `npx shadcn add` against this registry (local clone, or `avoidTheLite/dotfiles/<item>#<sha>`). Turbo generators copied into a project use the same registry. Do not copy these source files by hand.
+
+```sh
+dotfiles install-components
+dotfiles install-components ./apps/web
 ```
 
-## TailwindCSS & CSS Variables Setup
-
-Ensure your Tailwind styling is loaded with CSS variables matching the expected system tokens. Your global CSS stylesheet (e.g., `src/index.css`) should define:
-
-```css
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
-  }
-}
-```
-
-## Synchronization
-
-`dotfiles install` vendors this folder into every generated frontend at `src/components/ui/`. For an existing repo, run `dotfiles install-components` in the project root (or pass a target directory). Keep copies up to date with `dotfiles sync-components`. See the root [README](../../README.md).
+After install, primitives land in `src/components/ui/` and molecules in `src/components/molecules/`. Keep copies up to date with `dotfiles sync-components`, which re-runs the shadcn install. See the root [README](../../README.md).

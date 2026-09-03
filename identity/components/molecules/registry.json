@@ -1,0 +1,59 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "items": [
+    {
+      "name": "field",
+      "type": "registry:component",
+      "title": "Field",
+      "description": "Labeled input with optional description and error text.",
+      "registryDependencies": [
+        "avoidTheLite/dotfiles/utils",
+        "avoidTheLite/dotfiles/input",
+        "avoidTheLite/dotfiles/label"
+      ],
+      "files": [
+        {
+          "path": "Field.tsx",
+          "type": "registry:component",
+          "target": "src/components/molecules/Field.tsx"
+        }
+      ]
+    },
+    {
+      "name": "confirm-dialog",
+      "type": "registry:component",
+      "title": "Confirm Dialog",
+      "description": "Confirmation dialog composed from Dialog and Button.",
+      "registryDependencies": [
+        "avoidTheLite/dotfiles/utils",
+        "avoidTheLite/dotfiles/button",
+        "avoidTheLite/dotfiles/dialog"
+      ],
+      "files": [
+        {
+          "path": "ConfirmDialog.tsx",
+          "type": "registry:component",
+          "target": "src/components/molecules/ConfirmDialog.tsx"
+        }
+      ]
+    },
+    {
+      "name": "empty-state",
+      "type": "registry:component",
+      "title": "Empty State",
+      "description": "Empty-state card with optional action button.",
+      "registryDependencies": [
+        "avoidTheLite/dotfiles/utils",
+        "avoidTheLite/dotfiles/button",
+        "avoidTheLite/dotfiles/card"
+      ],
+      "files": [
+        {
+          "path": "EmptyState.tsx",
+          "type": "registry:component",
+          "target": "src/components/molecules/EmptyState.tsx"
+        }
+      ]
+    }
+  ]
+}

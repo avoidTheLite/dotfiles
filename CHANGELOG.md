@@ -4,6 +4,10 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Turned `identity/components` into a shadcn source registry (primitives in `ui/`, new molecular components in `molecules/`) with a root `registry.json` so installs can use `npx shadcn add avoidTheLite/dotfiles/<item>#<git-sha>`.
+- `dotfiles install-components`, `dotfiles install`, and turbo `frontend_app` now install UI files through `npx shadcn add` instead of copying source files, and they install molecules (Field, ConfirmDialog, EmptyState) alongside the primitives.
+- Removed the custom `.dotfiles-meta.json` component-library version files. Sync and install now follow shadcn/git SHA versioning.
+- Documented the molecules path and shadcn registry install in the client style guide and design component guide. Bumped `guides/manifest.json` to version 6.
 - Added a `github-repo-description` agent skill and portable prompt (`agent-skills/skills/github-repo-description/` and `agent-skills/prompts/github-repo-description.md`) so agents can write short GitHub About/tagline descriptions from a repo, README, or summary — two default options (one-sentence punch and two-sentence hook) unless the user sets a custom tone or format.
 - `dotfiles install` now vendors the standard UI component library into each generated frontend at `src/components/ui/`, including theme tokens, Radix/CVA dependencies, and a starter App that uses Button and Card.
 - `dotfiles install-components` now falls back to an explicit `unknown` component-library version when source metadata is missing, skips common cache/build folders (`.turbo`, `.next`, `build`) while scanning for vendored UI dirs, and rewrites vendored `.dotfiles-meta.json` timestamps when Turbo generators add components later.

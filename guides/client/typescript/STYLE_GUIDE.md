@@ -188,12 +188,13 @@ apps/web/
   src/
     components/
       ui/           ← shadcn primitives (Button, Dialog, Input, etc.)
+      molecules/    ← composed components from the dotfiles registry (Field, etc.)
       game/         ← feature components
 ```
 
 **Agent conventions for shadcn/ui:**
 
-- Use the shadcn CLI (`npx shadcn@latest add <component>`) to pull components.
+- Use the shadcn CLI (`npx shadcn@latest add <component>`) to pull official components, or `dotfiles install-components` / `npx shadcn@latest add avoidTheLite/dotfiles/standard-ui#<sha>` for the dotfiles registry.
 - After pulling, normalize the component to match project conventions: verify
   import paths, confirm the `cn()` helper location, and ensure the component
   uses the project's CSS custom property tokens.

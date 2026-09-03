@@ -1,0 +1,124 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "items": [
+    {
+      "name": "utils",
+      "type": "registry:lib",
+      "title": "cn helper",
+      "description": "Class-merging helper using clsx and tailwind-merge.",
+      "dependencies": ["clsx", "tailwind-merge"],
+      "files": [
+        {
+          "path": "utils.ts",
+          "type": "registry:lib",
+          "target": "src/components/ui/utils.ts"
+        }
+      ]
+    },
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "title": "Button",
+      "description": "Variant-driven button primitive using Class Variance Authority.",
+      "dependencies": ["class-variance-authority", "clsx", "tailwind-merge"],
+      "registryDependencies": ["avoidTheLite/dotfiles/utils"],
+      "files": [
+        {
+          "path": "Button.tsx",
+          "type": "registry:ui",
+          "target": "src/components/ui/Button.tsx"
+        }
+      ]
+    },
+    {
+      "name": "input",
+      "type": "registry:ui",
+      "title": "Input",
+      "description": "Styled text input primitive.",
+      "dependencies": ["clsx", "tailwind-merge"],
+      "registryDependencies": ["avoidTheLite/dotfiles/utils"],
+      "files": [
+        {
+          "path": "Input.tsx",
+          "type": "registry:ui",
+          "target": "src/components/ui/Input.tsx"
+        }
+      ]
+    },
+    {
+      "name": "label",
+      "type": "registry:ui",
+      "title": "Label",
+      "description": "Accessible label primitive built on Radix UI.",
+      "dependencies": ["@radix-ui/react-label", "class-variance-authority", "clsx", "tailwind-merge"],
+      "registryDependencies": ["avoidTheLite/dotfiles/utils"],
+      "files": [
+        {
+          "path": "Label.tsx",
+          "type": "registry:ui",
+          "target": "src/components/ui/Label.tsx"
+        }
+      ]
+    },
+    {
+      "name": "checkbox",
+      "type": "registry:ui",
+      "title": "Checkbox",
+      "description": "Accessible checkbox primitive built on Radix UI.",
+      "dependencies": ["@radix-ui/react-checkbox", "clsx", "tailwind-merge"],
+      "registryDependencies": ["avoidTheLite/dotfiles/utils"],
+      "files": [
+        {
+          "path": "Checkbox.tsx",
+          "type": "registry:ui",
+          "target": "src/components/ui/Checkbox.tsx"
+        }
+      ]
+    },
+    {
+      "name": "dialog",
+      "type": "registry:ui",
+      "title": "Dialog",
+      "description": "Modal overlay and focus-trapped dialog built on Radix UI.",
+      "dependencies": ["@radix-ui/react-dialog", "clsx", "tailwind-merge"],
+      "registryDependencies": ["avoidTheLite/dotfiles/utils"],
+      "files": [
+        {
+          "path": "Dialog.tsx",
+          "type": "registry:ui",
+          "target": "src/components/ui/Dialog.tsx"
+        }
+      ]
+    },
+    {
+      "name": "dropdown-menu",
+      "type": "registry:ui",
+      "title": "Dropdown Menu",
+      "description": "Popover menu and items built on Radix UI.",
+      "dependencies": ["@radix-ui/react-dropdown-menu", "clsx", "tailwind-merge"],
+      "registryDependencies": ["avoidTheLite/dotfiles/utils"],
+      "files": [
+        {
+          "path": "DropdownMenu.tsx",
+          "type": "registry:ui",
+          "target": "src/components/ui/DropdownMenu.tsx"
+        }
+      ]
+    },
+    {
+      "name": "card",
+      "type": "registry:ui",
+      "title": "Card",
+      "description": "Composable card layout with header, content, and footer.",
+      "dependencies": ["clsx", "tailwind-merge"],
+      "registryDependencies": ["avoidTheLite/dotfiles/utils"],
+      "files": [
+        {
+          "path": "Card.tsx",
+          "type": "registry:ui",
+          "target": "src/components/ui/Card.tsx"
+        }
+      ]
+    }
+  ]
+}

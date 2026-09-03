@@ -32,7 +32,7 @@ const TEMPLATE_GENERATORS = {
   'web-frontend': {
     id: 'frontend_app',
     status: 'available',
-    description: 'React 18 + Vite + Tailwind CSS frontend app with vendored UI components',
+    description: 'React 18 + Vite + Tailwind CSS frontend app with shadcn-registry UI components',
     destination: 'apps/{{name}}',
   },
   'node-backend': {

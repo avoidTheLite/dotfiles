@@ -6,7 +6,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { componentsSourceDir, installComponents, UI_DIR_SEGMENTS } from './components.mjs';
+import { componentsSourceDir, installComponents, buildRegistry } from './components.mjs';
 
 const APP_TYPE_TO_TEMPLATE = {
   frontend_app: 'web-frontend',
@@ -255,13 +255,20 @@ export function transferGenerators({ targetDir, dotfilesRoot }) {
     throw new Error(`Turbo generator config not found: ${configSource}`);
   }
   fs.copyFileSync(configSource, path.join(destGenerators, 'config.js'));
+  const installerSource = path.join(dotfilesRoot, 'scripts', 'lib', 'components.mjs');
+  if (!fs.existsSync(installerSource)) {
+    throw new Error(`Component installer not found: ${installerSource}`);
+  }
+  const destLib = path.join(destGenerators, 'lib');
+  fs.mkdirSync(destLib, { recursive: true });
+  fs.copyFileSync(installerSource, path.join(destLib, 'components.mjs'));
   const plopSource = path.join(scaffoldingRoot, 'plopfile.mjs');
   if (fs.existsSync(plopSource)) {
     fs.copyFileSync(plopSource, path.join(targetDir, 'plopfile.mjs'));
   }
-  const uiSource = componentsSourceDir(dotfilesRoot);
-  if (fs.existsSync(uiSource)) {
-    copyDirectory(uiSource, path.join(destGenerators, 'templates', 'ui-components'));
+  const registrySource = path.join(componentsSourceDir(dotfilesRoot), 'registry.json');
+  if (fs.existsSync(registrySource)) {
+    buildRegistry(registrySource, path.join(destGenerators, 'registry'));
   }
 }
 
@@ -324,9 +331,15 @@ export function installFromConfig({ targetDir, config, dotfilesRoot, force = fal
       }),
     );
     if (app.type === 'frontend_app') {
+      const builtRegistry = path.join(targetDir, 'turbo', 'generators', 'registry');
       const uiResult = installComponents({
+        targetDir: path.join(targetDir, 'apps', app.name),
         sourceDir: componentsSourceDir(dotfilesRoot),
-        targetDir: path.join(targetDir, 'apps', app.name, ...UI_DIR_SEGMENTS),
+        builtRegistryDir: fs.existsSync(path.join(builtRegistry, 'standard-ui.json'))
+          ? builtRegistry
+          : null,
+        overwrite: true,
+        cleanupNestedInstall: true,
       });
       created.push(...uiResult.files);
     }
