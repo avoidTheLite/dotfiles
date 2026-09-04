@@ -1,34 +1,100 @@
 #!/usr/bin/env node
 /**
- * Vendor identity/components into a target directory (typically src/components/ui).
- * Used by `dotfiles install` (new apps) and `dotfiles install-components`.
+ * Install identity/components through the shadcn registry (not file copies).
+ * Used by `dotfiles install`, `dotfiles install-components`, and turbo gen.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-
-/**
- * @param {string} dir
- * @returns {string[]}
- */
-function walkFiles(dir) {
-  if (!fs.existsSync(dir)) {
-    return [];
-  }
-  const results = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...walkFiles(fullPath));
-    } else {
-      results.push(fullPath);
-    }
-  }
-  return results;
-}
+import { execFileSync } from 'node:child_process';
 
 export const UI_DIR_SEGMENTS = ['src', 'components', 'ui'];
-export const META_FILENAME = '.dotfiles-meta.json';
-const SKIP_WHEN_COPYING = new Set([META_FILENAME]);
+export const MOLECULE_DIR_SEGMENTS = ['src', 'components', 'molecules'];
+export const GITHUB_REGISTRY = 'avoidTheLite/dotfiles';
+export const STANDARD_UI_ITEM = 'standard-ui';
+export const COMPONENTS_JSON = 'components.json';
+
+const SKIP_SCAN_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '.turbo',
+  '.next',
+  'build',
+  'dist',
+  'coverage',
+]);
+
+const DEFAULT_DEP_VERSIONS = {
+  clsx: '^2.1.1',
+  'tailwind-merge': '^3.4.0',
+  'class-variance-authority': '^0.7.1',
+  '@radix-ui/react-label': '^2.1.8',
+  '@radix-ui/react-checkbox': '^1.3.3',
+  '@radix-ui/react-dialog': '^1.1.15',
+  '@radix-ui/react-dropdown-menu': '^2.1.16',
+};
+
+/**
+ * @param {string} spec
+ * @returns {{ name: string, version: string | undefined }}
+ */
+function parseDependencySpec(spec) {
+  if (spec.startsWith('@')) {
+    const at = spec.indexOf('@', 1);
+    if (at === -1) {
+      return { name: spec, version: DEFAULT_DEP_VERSIONS[spec] };
+    }
+    return { name: spec.slice(0, at), version: spec.slice(at + 1) };
+  }
+  const at = spec.indexOf('@');
+  if (at === -1) {
+    return { name: spec, version: DEFAULT_DEP_VERSIONS[spec] };
+  }
+  return { name: spec.slice(0, at), version: spec.slice(at + 1) };
+}
+
+/**
+ * Record npm deps on the project package.json, then strip them from registry
+ * items so `shadcn add` copies files without running npm install.
+ *
+ * @param {string} builtDir
+ * @param {string} projectRoot
+ * @returns {void}
+ */
+export function mergeAndStripItemDependencies(builtDir, projectRoot) {
+  const collected = {};
+  for (const name of fs.readdirSync(builtDir)) {
+    if (!name.endsWith('.json') || name === 'registry.json') {
+      continue;
+    }
+    const fullPath = path.join(builtDir, name);
+    const item = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    for (const spec of item.dependencies ?? []) {
+      const parsed = parseDependencySpec(String(spec));
+      if (parsed.version) {
+        collected[parsed.name] = parsed.version;
+      }
+    }
+    if (item.dependencies || item.devDependencies) {
+      delete item.dependencies;
+      delete item.devDependencies;
+      fs.writeFileSync(fullPath, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
+    }
+  }
+
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath) || Object.keys(collected).length === 0) {
+    return;
+  }
+  const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  pkg.dependencies = pkg.dependencies ?? {};
+  for (const [name, version] of Object.entries(collected)) {
+    if (!pkg.dependencies[name] && !pkg.devDependencies?.[name]) {
+      pkg.dependencies[name] = version;
+    }
+  }
+  fs.writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
+}
 
 /**
  * @param {string} dotfilesRoot
@@ -39,71 +105,33 @@ export function componentsSourceDir(dotfilesRoot) {
 }
 
 /**
+ * @param {string} dotfilesRoot
+ * @returns {string}
+ */
+export function componentsRegistryFile(dotfilesRoot) {
+  return path.join(componentsSourceDir(dotfilesRoot), 'registry.json');
+}
+
+/**
  * @param {string} dir
  * @returns {boolean}
  */
 export function looksLikeDotfilesRoot(dir) {
   return (
-    fs.existsSync(path.join(dir, 'identity', 'components', META_FILENAME)) &&
+    fs.existsSync(path.join(dir, 'identity', 'components', 'registry.json')) &&
     fs.existsSync(path.join(dir, 'scripts', 'dotfiles.mjs'))
   );
 }
 
 /**
- * @param {string} sourceDir
- * @returns {{ version: string, source: string }}
+ * @param {string} dir
+ * @returns {boolean}
  */
-export function readComponentLibraryMeta(sourceDir) {
-  const metaPath = path.join(sourceDir, META_FILENAME);
-  let version = 'unknown';
-  let source = 'github.com/avoidTheLite/dotfiles';
-  if (fs.existsSync(metaPath)) {
-    try {
-      const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-      version = meta.component_library_version || version;
-      source = meta.source || source;
-    } catch {
-      // Keep defaults when source meta is malformed.
-    }
-  }
-  return { version, source };
-}
-
-/**
- * @param {{ sourceDir: string, targetDir: string }} options
- * @returns {{ targetDir: string, version: string, files: string[] }}
- */
-export function installComponents({ sourceDir, targetDir }) {
-  if (!fs.existsSync(sourceDir)) {
-    throw new Error(`Source components directory not found at ${sourceDir}`);
-  }
-
-  fs.mkdirSync(targetDir, { recursive: true });
-
-  const files = [];
-  for (const srcFile of walkFiles(sourceDir)) {
-    const relPath = path.relative(sourceDir, srcFile);
-    if (path.basename(relPath) === META_FILENAME || SKIP_WHEN_COPYING.has(relPath)) {
-      continue;
-    }
-    const destFile = path.join(targetDir, relPath);
-    fs.mkdirSync(path.dirname(destFile), { recursive: true });
-    fs.copyFileSync(srcFile, destFile);
-    files.push(destFile);
-  }
-
-  const { version, source } = readComponentLibraryMeta(sourceDir);
-  const destMetaPath = path.join(targetDir, META_FILENAME);
-  const targetMeta = {
-    component_library_version: version,
-    tools_version: version,
-    source,
-    last_synced: new Date().toISOString().split('T')[0],
-  };
-  fs.writeFileSync(destMetaPath, `${JSON.stringify(targetMeta, null, 2)}\n`, 'utf8');
-  files.push(destMetaPath);
-
-  return { targetDir, version, files };
+export function isBuiltRegistryDir(dir) {
+  return (
+    fs.existsSync(path.join(dir, `${STANDARD_UI_ITEM}.json`)) &&
+    fs.existsSync(path.join(dir, 'registry.json'))
+  );
 }
 
 /**
@@ -123,11 +151,526 @@ export function isReactPackage(packageJsonPath) {
 }
 
 /**
+ * @param {string[]} args
+ * @param {{ cwd?: string, stdio?: 'inherit' | 'pipe' }} [options]
+ * @returns {string}
+ */
+export function runShadcn(args, options = {}) {
+  const cwd = options.cwd ?? process.cwd();
+  const stdio = options.stdio ?? 'pipe';
+  try {
+    return execFileSync('npx', ['--yes', 'shadcn@latest', ...args], {
+      cwd,
+      encoding: 'utf8',
+      stdio: stdio === 'inherit' ? 'inherit' : ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (error) {
+    const err = /** @type {{ stdout?: string, stderr?: string, message?: string }} */ (error);
+    const detail = [err.stderr, err.stdout, err.message].filter(Boolean).join('\n');
+    throw new Error(`shadcn ${args[0] ?? ''} failed: ${detail}`.trim());
+  }
+}
+
+/**
+ * @param {string} dotfilesRoot
+ * @returns {string | null}
+ */
+export function resolveDotfilesRef(dotfilesRoot) {
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: dotfilesRoot,
+      encoding: 'utf8',
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} githubItem
+ * @returns {string}
+ */
+function githubItemName(githubItem) {
+  return String(githubItem).replace(/^avoidTheLite\/dotfiles\//, '').split('#')[0];
+}
+
+/**
+ * Point same-repo registryDependencies at sibling built JSON files so
+ * `shadcn add` does not fetch GitHub during a local install.
+ *
+ * @param {string} builtDir
+ * @returns {void}
+ */
+export function localizeBuiltRegistry(builtDir) {
+  rewriteRegistryDependencies(builtDir, 'relative');
+}
+
+/**
+ * shadcn resolves `./item.json` against the project cwd, not the registry
+ * directory. Use absolute paths right before `shadcn add`.
+ *
+ * @param {string} builtDir
+ * @param {'relative' | 'absolute'} style
+ * @returns {void}
+ */
+export function rewriteRegistryDependencies(builtDir, style) {
+  for (const name of fs.readdirSync(builtDir)) {
+    if (!name.endsWith('.json') || name === 'registry.json') {
+      continue;
+    }
+    const fullPath = path.join(builtDir, name);
+    const item = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    if (!Array.isArray(item.registryDependencies) || item.registryDependencies.length === 0) {
+      continue;
+    }
+    item.registryDependencies = item.registryDependencies.map((dep) => {
+      const raw = String(dep);
+      const itemName = githubItemName(raw.replace(/^\.\//, '').replace(/\.json$/, ''));
+      const local = path.join(builtDir, `${itemName}.json`);
+      if (!fs.existsSync(local)) {
+        return dep;
+      }
+      return style === 'absolute' ? local : `./${itemName}.json`;
+    });
+    fs.writeFileSync(fullPath, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
+  }
+}
+
+/**
+ * @param {string} sourceRegistryFile
+ * @param {string} outputDir
+ * @returns {string}
+ */
+export function buildRegistry(sourceRegistryFile, outputDir) {
+  if (!fs.existsSync(sourceRegistryFile)) {
+    throw new Error(`Source registry not found at ${sourceRegistryFile}`);
+  }
+  fs.mkdirSync(outputDir, { recursive: true });
+  runShadcn(['build', sourceRegistryFile, '-o', outputDir], {
+    cwd: path.dirname(sourceRegistryFile),
+  });
+  localizeBuiltRegistry(outputDir);
+  return outputDir;
+}
+
+/**
+ * @param {string} targetDir
+ * @returns {{
+ *   projectRoot: string,
+ *   uiDir: string,
+ *   moleculesDir: string,
+ *   flattenUi: boolean,
+ * }}
+ */
+export function classifyInstallTarget(targetDir) {
+  const resolved = path.resolve(targetDir);
+  const base = path.basename(resolved);
+  const parent = path.basename(path.dirname(resolved));
+  const grand = path.basename(path.dirname(path.dirname(resolved)));
+
+  if (base === 'ui' && parent === 'components' && grand === 'src') {
+    return {
+      projectRoot: path.dirname(path.dirname(path.dirname(resolved))),
+      uiDir: resolved,
+      moleculesDir: path.join(path.dirname(resolved), 'molecules'),
+      flattenUi: false,
+    };
+  }
+
+  if (
+    fs.existsSync(path.join(resolved, 'package.json')) ||
+    fs.existsSync(path.join(resolved, COMPONENTS_JSON))
+  ) {
+    return {
+      projectRoot: resolved,
+      uiDir: path.join(resolved, ...UI_DIR_SEGMENTS),
+      moleculesDir: path.join(resolved, ...MOLECULE_DIR_SEGMENTS),
+      flattenUi: false,
+    };
+  }
+
+  return {
+    projectRoot: resolved,
+    uiDir: path.join(resolved, ...UI_DIR_SEGMENTS),
+    moleculesDir: path.join(resolved, ...MOLECULE_DIR_SEGMENTS),
+    flattenUi: false,
+  };
+}
+
+/**
+ * @param {{
+ *   builtDir: string,
+ *   projectRoot: string,
+ *   uiDir: string,
+ *   moleculesDir: string,
+ * }} options
+ * @returns {void}
+ */
+export function applyInstallTargets({ builtDir, projectRoot, uiDir, moleculesDir }) {
+  const relUi = path.relative(projectRoot, uiDir) || '.';
+  const relMolecules = path.relative(projectRoot, moleculesDir) || '.';
+  const findSubpath = (targetPath, prefixSegments) => {
+    const segments = String(targetPath)
+      .split(/[\\/]+/)
+      .filter(Boolean);
+    for (let i = 0; i <= segments.length - prefixSegments.length; i += 1) {
+      if (prefixSegments.every((segment, offset) => segments[i + offset] === segment)) {
+        return segments.slice(i + prefixSegments.length);
+      }
+    }
+    return segments;
+  };
+
+  for (const name of fs.readdirSync(builtDir)) {
+    if (!name.endsWith('.json') || name === 'registry.json') {
+      continue;
+    }
+    const fullPath = path.join(builtDir, name);
+    const item = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+    if (!Array.isArray(item.files)) {
+      continue;
+    }
+    for (const file of item.files) {
+      const sourceTarget = file.target ?? file.path ?? '';
+      if (!sourceTarget) {
+        continue;
+      }
+      const isMolecule =
+        file.type === 'registry:component' ||
+        String(sourceTarget).includes('molecules');
+      const relativeTarget = findSubpath(
+        sourceTarget,
+        isMolecule ? MOLECULE_DIR_SEGMENTS : UI_DIR_SEGMENTS,
+      );
+      file.target = path.join(isMolecule ? relMolecules : relUi, ...relativeTarget);
+    }
+    fs.writeFileSync(fullPath, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
+  }
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {Record<string, unknown>}
+ */
+export function defaultComponentsJson(projectRoot) {
+  const cssPath = fs.existsSync(path.join(projectRoot, 'src', 'index.css'))
+    ? 'src/index.css'
+    : fs.existsSync(path.join(projectRoot, 'src', 'globals.css'))
+      ? 'src/globals.css'
+      : 'src/index.css';
+
+  return {
+    $schema: 'https://ui.shadcn.com/schema.json',
+    style: 'new-york',
+    rsc: false,
+    tsx: true,
+    tailwind: {
+      config: '',
+      css: cssPath,
+      baseColor: 'slate',
+      cssVariables: true,
+    },
+    aliases: {
+      components: '@/components',
+      utils: '@/components/ui/utils',
+      ui: '@/components/ui',
+      lib: '@/lib',
+      hooks: '@/hooks',
+    },
+  };
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {void}
+ */
+export function ensureShadcnProject(projectRoot) {
+  fs.mkdirSync(projectRoot, { recursive: true });
+
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    fs.writeFileSync(
+      packageJsonPath,
+      `${JSON.stringify(
+        {
+          name: path.basename(projectRoot) || 'ui',
+          private: true,
+          type: 'module',
+          dependencies: {
+            react: '^18.3.1',
+            'react-dom': '^18.3.1',
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+  }
+
+  const tsconfigPath = path.join(projectRoot, 'tsconfig.json');
+  if (!fs.existsSync(tsconfigPath)) {
+    fs.writeFileSync(
+      tsconfigPath,
+      `${JSON.stringify(
+        {
+          compilerOptions: {
+            target: 'ES2022',
+            module: 'ESNext',
+            moduleResolution: 'bundler',
+            jsx: 'react-jsx',
+            strict: true,
+            baseUrl: '.',
+            paths: {
+              '@/*': ['./src/*'],
+            },
+          },
+          include: ['src'],
+        },
+        null,
+        2,
+      )}\n`,
+      'utf8',
+    );
+  }
+
+  const componentsJsonPath = path.join(projectRoot, COMPONENTS_JSON);
+  if (!fs.existsSync(componentsJsonPath)) {
+    fs.writeFileSync(
+      componentsJsonPath,
+      `${JSON.stringify(defaultComponentsJson(projectRoot), null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  const cssPath = path.join(projectRoot, 'src', 'index.css');
+  if (!fs.existsSync(cssPath) && !fs.existsSync(path.join(projectRoot, 'src', 'globals.css'))) {
+    fs.mkdirSync(path.dirname(cssPath), { recursive: true });
+    fs.writeFileSync(cssPath, "@import 'tailwindcss';\n", 'utf8');
+  }
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {void}
+ */
+export function removeNestedPackageInstall(projectRoot) {
+  for (const name of ['node_modules', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock']) {
+    const fullPath = path.join(projectRoot, name);
+    if (!fs.existsSync(fullPath)) {
+      continue;
+    }
+    fs.rmSync(fullPath, { recursive: true, force: true });
+  }
+}
+
+/**
+ * @param {string} projectRoot
+ * @returns {boolean}
+ */
+export function hasParentWorkspace(projectRoot) {
+  let current = path.dirname(projectRoot);
+  const root = path.parse(current).root;
+  while (current && current !== root) {
+    if (fs.existsSync(path.join(current, 'pnpm-workspace.yaml'))) {
+      return true;
+    }
+    current = path.dirname(current);
+  }
+  return false;
+}
+
+/**
+ * @param {{
+ *   projectRoot: string,
+ *   registryDir: string,
+ *   item?: string,
+ *   overwrite?: boolean,
+ *   dryRun?: boolean,
+ * }} options
+ * @returns {string}
+ */
+export function addRegistryItem({
+  projectRoot,
+  registryDir,
+  item = STANDARD_UI_ITEM,
+  overwrite = true,
+  dryRun = false,
+}) {
+  const itemPath = path.join(registryDir, `${item}.json`);
+  if (!fs.existsSync(itemPath)) {
+    throw new Error(`Registry item "${item}" not found at ${itemPath}`);
+  }
+  const args = ['add', '-y'];
+  if (overwrite) {
+    args.push('-o');
+  }
+  if (dryRun) {
+    args.push('--dry-run');
+  }
+  args.push('--cwd', projectRoot, itemPath);
+  return runShadcn(args, { cwd: projectRoot });
+}
+
+/**
+ * @param {{
+ *   projectRoot: string,
+ *   item?: string,
+ *   ref?: string | null,
+ *   overwrite?: boolean,
+ *   dryRun?: boolean,
+ * }} options
+ * @returns {string}
+ */
+export function addGithubRegistryItem({
+  projectRoot,
+  item = STANDARD_UI_ITEM,
+  ref = null,
+  overwrite = true,
+  dryRun = false,
+}) {
+  const address = ref ? `${GITHUB_REGISTRY}/${item}#${ref}` : `${GITHUB_REGISTRY}/${item}`;
+  const args = ['add', '-y'];
+  if (overwrite) {
+    args.push('-o');
+  }
+  if (dryRun) {
+    args.push('--dry-run');
+  }
+  args.push('--cwd', projectRoot, address);
+  return runShadcn(args, { cwd: projectRoot });
+}
+
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
+function listInstalledComponentFiles(dir) {
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  const results = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...listInstalledComponentFiles(fullPath));
+    } else if (entry.name !== COMPONENTS_JSON) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+/**
+ * @param {{
+ *   targetDir: string,
+ *   sourceDir?: string | null,
+ *   builtRegistryDir?: string | null,
+ *   githubRef?: string | null,
+ *   overwrite?: boolean,
+ *   dryRun?: boolean,
+ *   cleanupNestedInstall?: boolean,
+ * }} options
+ * @returns {{
+ *   targetDir: string,
+ *   projectRoot: string,
+ *   uiDir: string,
+ *   moleculesDir: string,
+ *   files: string[],
+ *   version: string,
+ * }}
+ */
+export function installComponents({
+  targetDir,
+  sourceDir = null,
+  builtRegistryDir = null,
+  githubRef = null,
+  overwrite = true,
+  dryRun = false,
+  cleanupNestedInstall = false,
+}) {
+  const classified = classifyInstallTarget(targetDir);
+  const { projectRoot, uiDir, moleculesDir } = classified;
+  ensureShadcnProject(projectRoot);
+
+  let registryDir = builtRegistryDir;
+  let tempDir = null;
+  try {
+    if (!registryDir && sourceDir && isBuiltRegistryDir(sourceDir)) {
+      registryDir = sourceDir;
+    } else if (!registryDir && sourceDir && fs.existsSync(path.join(sourceDir, 'registry.json'))) {
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-registry-'));
+      registryDir = buildRegistry(path.join(sourceDir, 'registry.json'), tempDir);
+    }
+
+    if (registryDir) {
+      if (!isBuiltRegistryDir(registryDir) && fs.existsSync(path.join(registryDir, 'registry.json'))) {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-registry-'));
+        registryDir = buildRegistry(path.join(registryDir, 'registry.json'), tempDir);
+      }
+      if (!tempDir) {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-registry-'));
+        for (const name of fs.readdirSync(registryDir)) {
+          fs.copyFileSync(path.join(registryDir, name), path.join(tempDir, name));
+        }
+        registryDir = tempDir;
+      }
+      applyInstallTargets({
+        builtDir: registryDir,
+        projectRoot,
+        uiDir,
+        moleculesDir,
+      });
+      rewriteRegistryDependencies(registryDir, 'absolute');
+      mergeAndStripItemDependencies(registryDir, projectRoot);
+      addRegistryItem({
+        projectRoot,
+        registryDir,
+        item: STANDARD_UI_ITEM,
+        overwrite,
+        dryRun,
+      });
+    } else {
+      addGithubRegistryItem({
+        projectRoot,
+        item: STANDARD_UI_ITEM,
+        ref: githubRef,
+        overwrite,
+        dryRun,
+      });
+    }
+  } finally {
+    if (tempDir) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+
+  if (cleanupNestedInstall || hasParentWorkspace(projectRoot)) {
+    removeNestedPackageInstall(projectRoot);
+  }
+
+  const files = [
+    ...listInstalledComponentFiles(uiDir),
+    ...listInstalledComponentFiles(moleculesDir),
+  ];
+  const version = githubRef || 'local';
+
+  return {
+    targetDir: uiDir,
+    projectRoot,
+    uiDir,
+    moleculesDir,
+    files,
+    version,
+  };
+}
+
+/**
  * @param {string} root
  * @returns {string[]}
  */
 export function findExistingComponentDirs(root) {
-  const results = [];
+  const results = new Set();
   const walk = (current) => {
     let entries;
     try {
@@ -138,27 +681,29 @@ export function findExistingComponentDirs(root) {
     for (const entry of entries) {
       const fullPath = path.join(current, entry.name);
       if (entry.isDirectory()) {
-        if (
-          entry.name === 'node_modules' ||
-          entry.name === '.git' ||
-          entry.name === '.turbo' ||
-          entry.name === '.next' ||
-          entry.name === 'build' ||
-          entry.name === 'dist' ||
-          entry.name === 'coverage'
-        ) {
+        if (SKIP_SCAN_DIRS.has(entry.name)) {
           continue;
         }
         walk(fullPath);
         continue;
       }
-      if (entry.name === META_FILENAME) {
-        results.push(path.dirname(fullPath));
+      if (entry.name === COMPONENTS_JSON) {
+        results.add(path.dirname(fullPath));
+      }
+      if (
+        entry.name === 'Button.tsx' &&
+        path.basename(current) === 'ui' &&
+        path.basename(path.dirname(current)) === 'components'
+      ) {
+        const srcDir = path.dirname(path.dirname(current));
+        if (path.basename(srcDir) === 'src') {
+          results.add(path.dirname(srcDir));
+        }
       }
     }
   };
   walk(root);
-  return results;
+  return [...results];
 }
 
 /**
@@ -177,16 +722,14 @@ export function findFrontendUiTargets(repoRoot) {
     }
     const appDir = path.join(appsDir, entry.name);
     if (isReactPackage(path.join(appDir, 'package.json'))) {
-      targets.push(path.join(appDir, ...UI_DIR_SEGMENTS));
+      targets.push(appDir);
     }
   }
   return targets;
 }
 
 /**
- * Resolve one or more install destinations.
- * Explicit target wins. Otherwise reuse existing vendored dirs, then
- * `apps/<frontend>/src/components/ui`, then `src/components/ui` in the repo.
+ * Resolve one or more install destinations (project/app roots, or an explicit path).
  *
  * @param {{ repoRoot: string, explicitTarget?: string | null }} options
  * @returns {string[]}
@@ -198,7 +741,7 @@ export function resolveComponentInstallTargets({ repoRoot, explicitTarget = null
 
   if (looksLikeDotfilesRoot(repoRoot)) {
     throw new Error(
-      'Refusing to vendor components into the dotfiles source repository. Pass a target directory.',
+      'Refusing to install components into the dotfiles source repository. Pass a target directory.',
     );
   }
 

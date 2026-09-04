@@ -6,8 +6,10 @@
 
 ## Installation and ownership
 
-- **Copy, don’t abstract prematurely.** The Shadcn workflow adds source files to your repository. Treat
-  `components/ui` as a maintained layer: review upgrades like any other dependency change.
+- **Copy, don’t abstract prematurely.** The Shadcn workflow adds source files to your repository via the
+  CLI and a registry (this repo’s `identity/components` catalog, pinned by git SHA). Treat
+  `components/ui` and `components/molecules` as a maintained layer: review upgrades like any other
+  dependency change.
 - **Pin compatible versions** of React, Radix, Tailwind, and `class-variance-authority` (or the styling
   approach your team chose) per your TypeScript monorepo guide. Avoid mixing two different dialog or menu
   primitives in the same surface without a strong reason.

@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.1.0",
-    "last_updated": "2026-09-01",
+    "version": "2.3.0",
+    "last_updated": "2026-09-04",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -27,6 +27,7 @@
       }
     },
     "versioning_and_releases": {
+      "see": "package_management.dotfiles_versioning",
       "versioning_strategy": "The source of truth is the git commit SHA. Downstream repos adopt the commit SHA of dotfiles. Bump version in manifest.json for normative changes.",
       "changelog_policy": "Any normative changes under guides/, validation/, or scripts/ must update the root CHANGELOG.md in the same commit."
     },
@@ -72,9 +73,50 @@
           "default_backend_language": "node",
           "capability_manifest": "./identity/generation/capability-manifest.json",
           "cli": {
-            "install": "Copy turbo/plop generators into the working directory, render apps from a JSON config object, and vendor identity/components into each frontend at src/components/ui/.",
-            "command": "dotfiles install [target-dir] --config <file.json>",
-            "install_components": "dotfiles install-components [target-dir]"
+            "install": {
+              "command": "dotfiles install [target-dir] --config <file.json>",
+              "flags": ["--example", "--name <slug>", "--scope <@org>", "--force"],
+              "requires": "empty target unless --force",
+              "does": [
+                "copy turbo/plop generators into turbo/generators/ (templates, config.js, installer lib, built shadcn registry)",
+                "copy plopfile.mjs",
+                "render monorepo root (pnpm-workspace.yaml, turbo.json, root package.json, .npmrc, eslint, prettier)",
+                "render shared packages required by the config (tsconfig, types, util)",
+                "render apps from the JSON config (frontend_app, node_backend)",
+                "install identity/components via shadcn into each frontend (src/components/ui/ and src/components/molecules/)"
+              ],
+              "does_not": [
+                "pnpm install",
+                "start dev servers",
+                "generate backend_service / Python FastAPI (planned, not MVP)"
+              ],
+              "next": ["pnpm install", "pnpm dev"]
+            },
+            "generate": {
+              "command": "dotfiles generate [target-dir] --config <file.json>",
+              "same_as": "install",
+              "difference": "always overwrites (force=true)"
+            },
+            "install_components": {
+              "command": "dotfiles install-components [target-dir]",
+              "flags": ["--dry-run"],
+              "does": [
+                "run npx shadcn add against identity/components (or the copied registry)",
+                "write primitives to src/components/ui/ and molecules to src/components/molecules/",
+                "merge pinned npm versions into package.json"
+              ],
+              "does_not": ["pnpm install", "npm install", "copy component TSX by hand"],
+              "versioning": "git SHA via shadcn #ref"
+            },
+            "sync_components": {
+              "command": "dotfiles sync-components",
+              "flags": ["--dry-run", "--force", "--auto"],
+              "does": [
+                "re-install from the shadcn registry into existing component dirs",
+                "commit and open a PR when files change"
+              ],
+              "does_not": ["custom .dotfiles-meta.json version compare"]
+            }
           }
         },
         "preferred_languages": {
@@ -119,7 +161,7 @@
         "prop_typing": "Name prop interfaces with a Props suffix.",
         "hook_colocation": "Co-locate hooks with the components that own them (e.g. src/game/useGameState.ts with src/game/GameBoard.tsx). Only promote to shared hooks/ if used by multiple features.",
         "styling_system": "Tailwind CSS is the sole styling system. CSS variables in HSL format define theme tokens to support dark/light modes. No styled-components or CSS modules.",
-        "primitive_components": "shadcn/ui is the standard library. Primitives are copied as source files into src/components/ui/ and normalized (cn helper, import paths).",
+        "primitive_components": "Follow package_management.components_registry. shadcn/ui is the standard library. Dotfiles publishes primitives and molecules as a shadcn registry (identity/components). Install with the shadcn CLI or dotfiles install-components; primitives land in src/components/ui/ and molecules in src/components/molecules/. Pin versions with a git SHA (avoidTheLite/dotfiles/<item>#<sha>).",
         "styling_utilities": "clsx, tailwind-merge, and class-variance-authority combined into a single cn() helper. CVA is used for variant-driven leaf/atomic components. Components must accept external className overrides.",
         "global_stylesheets": "index.css is restricted to CSS reset, font-face declarations, Tailwind @layer base directives, and CSS custom properties Tailwind cannot express.",
         "state_management_hierarchy": "Local state (useState) is the default. Server state is managed solely by TanStack Query (no useEffect for API data fetching; use useMutation with invalidation). Shared client state uses small, domain-scoped Zustand stores with selector-based subscriptions."
@@ -157,6 +199,120 @@
           "python_etl_data": "Polars lazy/eager strategy, Pydantic validation at pipeline boundaries, and testing with golden files."
         }
       }
+  },
+  "package_management": {
+    "roles": {
+      "pnpm": "workspaces, lockfile, dependency install/add",
+      "turborepo": "task graph, cache, generators — not a package manager",
+      "uv": "Python deps and lockfile",
+      "shadcn": "UI source registry; this repo is not an npm package of components"
+    },
+    "javascript": {
+      "manager": "pnpm",
+      "manager_version": "10.34.5",
+      "packageManager_field": "pnpm@10.34.5",
+      "node": ">=22",
+      "workspace": {
+        "file": "pnpm-workspace.yaml",
+        "globs": ["apps/*", "packages/*"],
+        "internal_protocol": "workspace:*"
+      },
+      "lockfile": "pnpm-lock.yaml",
+      "commit_lockfile": true,
+      "npmrc": {
+        "shamefully-hoist": true
+      },
+      "onlyBuiltDependencies": ["esbuild"],
+      "commands": {
+        "install": "pnpm install",
+        "add_workspace": "pnpm add <pkg> --filter <workspace>",
+        "add_workspace_dev": "pnpm add -D <pkg> --filter <workspace>",
+        "add_root_dev": "pnpm add -w -D <pkg>",
+        "run_task": "pnpm <script> or pnpm exec turbo run <task>"
+      },
+      "forbidden": [
+        "turbo install",
+        "global turbo before pnpm install",
+        "npm/yarn at the workspace root",
+        "nested lockfiles or node_modules under apps/ or packages/"
+      ],
+      "see": "guides/monorepo/typescript/STYLE_GUIDE.md"
+    },
+    "python": {
+      "manager": "uv",
+      "lockfile": "uv.lock",
+      "commit_lockfile": true,
+      "ci": "uv sync --frozen",
+      "requires_python": ">=3.13,<3.14",
+      "turbo_bridge": "package.json scripts wrap uv run so turbo run lint|test|typecheck hits Python packages",
+      "see": "guides/monorepo/python/STYLE_GUIDE.md"
+    },
+    "turborepo": {
+      "role": "task runner after pnpm owns install",
+      "installed_as": "root devDependency (turbo@^2.10.12, @turbo/gen@^2.10.12)",
+      "invoke": "pnpm <script> or pnpm exec turbo — never a global turbo binary before pnpm install",
+      "never_global_turbo_before_install": true,
+      "root_scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "test": "turbo run test",
+        "typecheck": "turbo run typecheck",
+        "format": "prettier --write .",
+        "gen": "turbo gen"
+      },
+      "task_dependsOn": {
+        "build": ["^build"],
+        "test": ["^build"],
+        "lint": ["^build"],
+        "typecheck": ["^build"]
+      },
+      "skip_missing_build_in_source_packages": true,
+      "generators": {
+        "when": "after pnpm install",
+        "command": "pnpm exec turbo gen",
+        "available": ["frontend_app", "node_backend"],
+        "frontend_app_installs": "copied shadcn registry at turbo/generators/registry"
+      }
+    },
+    "components_registry": {
+      "type": "shadcn_source_registry",
+      "source": "identity/components",
+      "github_entrypoint": "registry.json",
+      "github_address": "avoidTheLite/dotfiles/<item>#<git-sha>",
+      "default_item": "standard-ui",
+      "install": [
+        "dotfiles install-components [target-dir]",
+        "npx shadcn@latest add avoidTheLite/dotfiles/standard-ui#<git-sha>"
+      ],
+      "sync": "dotfiles sync-components",
+      "layout": {
+        "primitives": "src/components/ui/",
+        "molecules": "src/components/molecules/"
+      },
+      "npm_deps": "pinned in registry JSON; installer merges into package.json and does not run npm install",
+      "forbidden": [
+        "copy component TSX by hand",
+        "custom .dotfiles-meta.json version fields",
+        "npm install inside an app during scaffold"
+      ]
+    },
+    "dotfiles_versioning": {
+      "this_repo": {
+        "not_an_npm_package": true,
+        "consume": "git clone or SHA pin — never npm publish/install of dotfiles"
+      },
+      "source_of_truth": "git_commit_sha",
+      "downstream_pin": "dotfiles commit SHA",
+      "component_pin": "same git SHA via shadcn #ref",
+      "files": {
+        "human_log": "CHANGELOG.md",
+        "guides": "guides/manifest.json version (bump on normative guide changes)",
+        "workspace_standards": "identity/workspace-standards.json metadata.version",
+        "capability_manifest": "identity/generation/capability-manifest.json version"
+      },
+      "changelog_policy": "normative changes under guides/, validation/, or scripts/ update CHANGELOG.md in the same commit"
+    }
   },
   "generation_conventions": {
     "capability_manifest": {

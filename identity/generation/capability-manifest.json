@@ -17,7 +17,7 @@
     {
       "id": "frontend_app",
       "status": "available",
-      "description": "React 18 + Vite + Tailwind CSS frontend app with vendored UI components",
+      "description": "React 18 + Vite + Tailwind CSS frontend app with shadcn-registry UI components",
       "source": "./identity/scaffolding/templates/web-frontend",
       "destination": "apps/{{name}}"
     },

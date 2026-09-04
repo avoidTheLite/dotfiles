@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "dotfiles",
+  "homepage": "https://github.com/avoidTheLite/dotfiles",
+  "include": ["ui/registry.json", "molecules/registry.json"],
+  "items": [
+    {
+      "name": "standard-ui",
+      "type": "registry:item",
+      "title": "Standard UI",
+      "description": "Dotfiles UI primitives and molecular components.",
+      "registryDependencies": [
+        "avoidTheLite/dotfiles/utils",
+        "avoidTheLite/dotfiles/button",
+        "avoidTheLite/dotfiles/input",
+        "avoidTheLite/dotfiles/label",
+        "avoidTheLite/dotfiles/checkbox",
+        "avoidTheLite/dotfiles/dialog",
+        "avoidTheLite/dotfiles/dropdown-menu",
+        "avoidTheLite/dotfiles/card",
+        "avoidTheLite/dotfiles/field",
+        "avoidTheLite/dotfiles/confirm-dialog",
+        "avoidTheLite/dotfiles/empty-state"
+      ]
+    }
+  ]
+}

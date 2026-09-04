@@ -7,7 +7,11 @@
     "noEmit": true,
     "emitDeclarationOnly": false,
     "composite": false,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }

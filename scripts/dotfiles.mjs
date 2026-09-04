@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
 import {
   componentsSourceDir,
+  findExistingComponentDirs,
   installComponents,
   resolveComponentInstallTargets,
 } from './lib/components.mjs';
@@ -26,23 +27,6 @@ function runCmd(cmd, options = {}) {
 // Find absolute path of the dotfiles repository root from the script location
 const dotfilesRoot = path.resolve(__dirname, '..');
 
-// Helper to recursively list all files in a directory
-function getFilesRecursively(dir) {
-  if (!fs.existsSync(dir)) return [];
-  const results = [];
-  const list = fs.readdirSync(dir);
-  for (const file of list) {
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    if (stat && stat.isDirectory()) {
-      results.push(...getFilesRecursively(filePath));
-    } else {
-      results.push(filePath);
-    }
-  }
-  return results;
-}
-
 // Helper to display CLI help
 function printHelp() {
   console.log(`Dotfiles CLI
@@ -56,8 +40,8 @@ Usage:
 
 Install copies turbo/plop generators into the target directory, then renders
 a monorepo from the JSON config (React app + Node service by default).
-Frontend apps also receive the standard UI component library at
-src/components/ui/.
+Frontend apps receive the standard UI library through the shadcn registry
+(primitives under src/components/ui/ and molecules under src/components/molecules/).
 
 Options:
   --config <path>   Path to a JSON object of generator inputs
@@ -68,15 +52,14 @@ Options:
   -h, --help        Show this help message
 
 Options for components:
-  --dry-run                         Diff and report only (sync-components only)
+  --dry-run                         Preview shadcn add without writing files
   --auto                            Scaffold a scheduled GitHub Action for weekly sync (sync-components only)
-  --force                           Force sync even if local vendored directory has uncommitted changes
+  --force                           Force sync even if local component directories have uncommitted changes
 
 Commands for components:
-  install-components [target-dir]   Vendor standard UI components into a path,
-                                    or the current repo when omitted
-                                    (apps/<frontend>/src/components/ui, else src/components/ui)
-  sync-components                   Pull latest standard base component updates and open a PR
+  install-components [target-dir]   Install the shadcn registry (primitives + molecules)
+                                    into a path, or the current repo when omitted
+  sync-components                   Re-install from the shadcn registry and open a PR
 
 Example:
   mkdir my-app && cd my-app
@@ -200,6 +183,8 @@ function main() {
         i += 1;
       } else if (arg.startsWith('--target=')) {
         explicitTarget = arg.slice('--target='.length);
+      } else if (arg === '--dry-run') {
+        continue;
       } else if (arg.startsWith('-')) {
         console.error(`Unknown option: ${arg}`);
         console.error('Usage: dotfiles install-components [target-dir]');
@@ -210,6 +195,7 @@ function main() {
     }
 
     const sourceDir = componentsSourceDir(dotfilesRoot);
+    const isDryRun = args.includes('--dry-run');
     let targets;
     try {
       targets = resolveComponentInstallTargets({
@@ -225,9 +211,17 @@ function main() {
 
     try {
       for (const targetDir of targets) {
-        const result = installComponents({ sourceDir, targetDir });
-        const display = path.relative(process.cwd(), result.targetDir) || result.targetDir;
-        console.log(`Installed standard UI components to ${display} (v${result.version})`);
+        const result = installComponents({
+          targetDir,
+          sourceDir,
+          overwrite: true,
+          dryRun: isDryRun,
+        });
+        const display = path.relative(process.cwd(), result.projectRoot) || result.projectRoot;
+        const uiDisplay = path.relative(process.cwd(), result.uiDir) || result.uiDir;
+        console.log(
+          `${isDryRun ? 'Would install' : 'Installed'} standard UI components via shadcn registry to ${display} (${uiDisplay})`,
+        );
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -242,19 +236,6 @@ function main() {
     const isAuto = args.includes('--auto');
     const isForce = args.includes('--force');
 
-    // 1. Locate local .dotfiles-meta.json recursively from cwd
-    const allFiles = getFilesRecursively(process.cwd());
-    const localMetaPath = allFiles.find(f => path.basename(f) === '.dotfiles-meta.json' && !f.includes('node_modules') && !f.includes('.git'));
-
-    if (!localMetaPath) {
-      console.error('Error: No local .dotfiles-meta.json found in the current working directory hierarchy.');
-      console.error('Please run "dotfiles install-components" (or pass a target directory) to initialize standard components.');
-      process.exit(1);
-    }
-
-    const vendoredDir = path.dirname(localMetaPath);
-
-    // If --auto flag is provided, scaffold a weekly scheduled GitHub Action
     if (isAuto) {
       const workflowDir = path.join(process.cwd(), '.github', 'workflows');
       fs.mkdirSync(workflowDir, { recursive: true });
@@ -289,7 +270,6 @@ jobs:
         env:
           GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Fetch dotfiles and run sync
           git clone --depth 1 https://github.com/avoidTheLite/dotfiles.git ~/dotfiles
           mkdir -p ~/.local/bin
           ln -s ~/dotfiles/scripts/dotfiles ~/.local/bin/dotfiles
@@ -302,220 +282,100 @@ jobs:
       process.exit(0);
     }
 
-    // 2. Read local meta content
-    let localMeta;
-    try {
-      localMeta = JSON.parse(fs.readFileSync(localMetaPath, 'utf8'));
-    } catch (err) {
-      console.error(`Error: Could not parse local metadata file at ${localMetaPath}`);
+    const targets = findExistingComponentDirs(process.cwd());
+    if (targets.length === 0) {
+      console.error('Error: No installed shadcn/dotfiles UI components found.');
+      console.error('Please run "dotfiles install-components" (or pass a target directory) first.');
       process.exit(1);
     }
 
-    const localVersion = localMeta.component_library_version;
-    const sourceUrl = localMeta.source || 'github.com/avoidTheLite/dotfiles';
-
-    if (!localVersion) {
-      console.error('Error: "component_library_version" is missing from .dotfiles-meta.json.');
-      process.exit(1);
-    }
-
-    // 3. Check for uncommitted changes in the local vendored directory
-    const gitStatusOut = runCmd(`git status --porcelain "${vendoredDir}"`);
-    if (gitStatusOut && gitStatusOut.trim().length > 0) {
-      if (!isForce) {
-        console.error(`Error: Local directory "${path.relative(process.cwd(), vendoredDir)}" has uncommitted changes.`);
-        console.error('Please commit or stash your changes before syncing, or run with --force to overwrite.');
-        process.exit(1);
-      } else {
+    for (const target of targets) {
+      const gitStatusOut = runCmd(`git status --porcelain "${target}"`);
+      if (gitStatusOut && gitStatusOut.trim().length > 0) {
+        if (!isForce) {
+          console.error(`Error: Local directory "${path.relative(process.cwd(), target)}" has uncommitted changes.`);
+          console.error('Please commit or stash your changes before syncing, or run with --force to overwrite.');
+          process.exit(1);
+        }
         console.log('Warning: --force specified. Overwriting uncommitted local changes.');
       }
     }
 
-    // 4. Fetch/clone latest dotfiles component source
-    console.log(`Cloning latest source from ${sourceUrl}...`);
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-sync-'));
-    
-    // Prepare Git remote URL
-    const gitRemoteUrl = (sourceUrl.startsWith('http') || sourceUrl.startsWith('/') || sourceUrl.startsWith('.'))
-      ? sourceUrl
-      : `https://${sourceUrl}.git`;
+    const sourceDir = componentsSourceDir(dotfilesRoot);
+    const hasLocalRegistry = fs.existsSync(path.join(sourceDir, 'registry.json'));
 
-    const cloneResult = runCmd(`git clone --depth 1 --filter=blob:none --sparse "${gitRemoteUrl}" "${tempDir}"`);
-    if (cloneResult === null && !fs.existsSync(path.join(tempDir, '.git'))) {
-      console.error(`Error: No network access or failed to clone from source repo: ${gitRemoteUrl}`);
-      // Clean up temp dir
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-      process.exit(1);
-    }
-
-    const checkoutResult = runCmd(`git sparse-checkout set identity/components`, { cwd: tempDir });
-    const sourceComponentsDir = path.join(tempDir, 'identity', 'components');
-
-    if (!fs.existsSync(sourceComponentsDir)) {
-      console.error('Error: Source components directory could not be sparse-checked out.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-      process.exit(1);
-    }
-
-    // 5. Compare versions
-    const sourceMetaPath = path.join(sourceComponentsDir, '.dotfiles-meta.json');
-    if (!fs.existsSync(sourceMetaPath)) {
-      console.error('Error: Source components directory is missing .dotfiles-meta.json.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-      process.exit(1);
-    }
-
-    let sourceMeta;
-    try {
-      sourceMeta = JSON.parse(fs.readFileSync(sourceMetaPath, 'utf8'));
-    } catch {
-      console.error('Error: Could not parse source .dotfiles-meta.json.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-      process.exit(1);
-    }
-
-    const latestVersion = sourceMeta.component_library_version;
-    if (!latestVersion) {
-      console.error('Error: "component_library_version" is missing from source .dotfiles-meta.json.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-      process.exit(1);
-    }
-
-    if (localVersion === latestVersion) {
-      console.log(`Component library is up to date (version ${localVersion}).`);
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-      process.exit(0);
-    }
-
-    console.log(`New version found: local v${localVersion} -> latest v${latestVersion}`);
-
-    // 6. Diff changed files between local vendored copy and latest source
-    const sourceFiles = getFilesRecursively(sourceComponentsDir);
-    const changedFilesList = [];
-    const addedFilesList = [];
-
-    for (const srcFile of sourceFiles) {
-      const relPath = path.relative(sourceComponentsDir, srcFile);
-      if (relPath === '.dotfiles-meta.json') continue; // Skip metadata file diff
-
-      const localFile = path.join(vendoredDir, relPath);
-      if (!fs.existsSync(localFile)) {
-        addedFilesList.push(relPath);
-      } else {
-        const srcContent = fs.readFileSync(srcFile, 'utf8');
-        const localContent = fs.readFileSync(localFile, 'utf8');
-        if (srcContent !== localContent) {
-          changedFilesList.push(relPath);
-        }
-      }
-    }
-
-    const allDiffs = [...addedFilesList, ...changedFilesList];
-    if (allDiffs.length === 0) {
-      console.log('No component files have changed between local copy and upstream source.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
-      process.exit(0);
-    }
-
-    // If dry-run: output summary of changes only
     if (isDryRun) {
-      console.log('\n--- Dry-Run Summary ---');
-      console.log(`Version change: v${localVersion} -> v${latestVersion}`);
-      console.log('\nFiles to be added:');
-      addedFilesList.forEach(f => console.log(`  + ${f}`));
-      console.log('\nFiles to be updated:');
-      changedFilesList.forEach(f => console.log(`  M ${f}`));
-      console.log('\nNo files were modified locally.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+      for (const target of targets) {
+        installComponents({
+          targetDir: target,
+          sourceDir: hasLocalRegistry ? sourceDir : null,
+          overwrite: true,
+          dryRun: true,
+        });
+        console.log(`Would re-install shadcn registry components into ${path.relative(process.cwd(), target) || target}`);
+      }
       process.exit(0);
     }
 
-    // 7. Verify gh CLI is installed and authenticated
+    const beforeStatus = runCmd('git status --porcelain') ?? '';
+    for (const target of targets) {
+      installComponents({
+        targetDir: target,
+        sourceDir: hasLocalRegistry ? sourceDir : null,
+        overwrite: true,
+      });
+      console.log(`Re-installed shadcn registry components into ${path.relative(process.cwd(), target) || target}`);
+    }
+
+    const afterStatus = runCmd('git status --porcelain') ?? '';
+    if (afterStatus === beforeStatus) {
+      console.log('Component library is already up to date with the shadcn registry.');
+      process.exit(0);
+    }
+
     const hasGh = runCmd('which gh');
     if (!hasGh) {
       console.error('Error: "gh" CLI is not installed. Please install it to continue.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
       process.exit(1);
     }
 
     const ghAuthStatus = runCmd('gh auth status');
-    if (ghAuthStatus === null || ghAuthStatus.includes('Logged in to') === false) {
+    if (ghAuthStatus === null || !ghAuthStatus.includes('Logged in to')) {
       console.error('Error: "gh" CLI is not authenticated. Please run "gh auth login" first.');
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
       process.exit(1);
     }
 
-    // 8. Copy changed files into vendored component directory
-    for (const srcFile of sourceFiles) {
-      const relPath = path.relative(sourceComponentsDir, srcFile);
-      if (relPath === '.dotfiles-meta.json') continue;
-
-      const destFile = path.join(vendoredDir, relPath);
-      fs.mkdirSync(path.dirname(destFile), { recursive: true });
-      fs.copyFileSync(srcFile, destFile);
-    }
-
-    // Write updated .dotfiles-meta.json
-    const updatedMeta = {
-      ...localMeta,
-      component_library_version: latestVersion,
-      tools_version: latestVersion,
-      last_synced: new Date().toISOString().split('T')[0]
-    };
-    fs.writeFileSync(localMetaPath, JSON.stringify(updatedMeta, null, 2) + '\n', 'utf8');
-
-    // 9. Git operations
-    const branchName = `dotfiles-sync/component-library-v${latestVersion}`;
+    const stamp = new Date().toISOString().slice(0, 10);
+    const branchName = `dotfiles-sync/shadcn-registry-${stamp}`;
     console.log(`Creating branch ${branchName}...`);
-
     const checkoutBranchResult = runCmd(`git checkout -b "${branchName}"`);
     if (checkoutBranchResult === null) {
-      // Try switching branch if already exists
       runCmd(`git checkout "${branchName}"`);
     }
 
-    console.log('Staging files...');
-    runCmd(`git add "${vendoredDir}"`);
-
-    console.log('Committing changes...');
-    runCmd(`git commit -m "chore: sync component library to v${latestVersion}"`);
-
-    console.log('Pushing branch...');
+    for (const target of targets) {
+      runCmd(`git add "${target}"`);
+    }
+    runCmd('git commit -m "chore: sync UI components from the shadcn registry"');
     const pushResult = runCmd(`git push origin "${branchName}"`);
     if (pushResult === null) {
-      // Try with set upstream
       runCmd(`git push --set-upstream origin "${branchName}"`);
     }
 
-    // 10. Open pull request via `gh pr create`
-    console.log('Opening pull request...');
-    const prTitle = `Sync component library to v${latestVersion}`;
-    
-    // Construct markdown list of changed files
-    let prBody = `## Summary\nSuccessfully synced the pre-configured standard UI component library from dotfiles to **v${latestVersion}**.\n\n### Changes\n`;
-    if (addedFilesList.length > 0) {
-      prBody += `#### Added:\n`;
-      addedFilesList.forEach(f => { prBody += `- \`${f}\`\n`; });
-    }
-    if (changedFilesList.length > 0) {
-      prBody += `#### Updated:\n`;
-      changedFilesList.forEach(f => { prBody += `- \`${f}\`\n`; });
-    }
-    prBody += `\nFor more details, see the upstream dotfiles commit log or repository.`;
+    const prBody = `## Summary
+Re-installed the standard UI component library from the dotfiles shadcn registry.
 
+See \`git diff\` on this branch for the file-level changes. Versioning follows the upstream git SHA (\`npx shadcn add avoidTheLite/dotfiles/standard-ui#<sha>\`).
+`;
     const tempPrBodyFile = path.join(os.tmpdir(), 'pr-body.md');
     fs.writeFileSync(tempPrBodyFile, prBody, 'utf8');
-
-    const prUrl = runCmd(`gh pr create --title "${prTitle}" --body-file "${tempPrBodyFile}"`);
+    const prUrl = runCmd(`gh pr create --title "Sync UI components from the shadcn registry" --body-file "${tempPrBodyFile}"`);
+    try { fs.rmSync(tempPrBodyFile, { force: true }); } catch { /* ignore */ }
     if (prUrl) {
       console.log(`\nPull request successfully opened:\n${prUrl}`);
     } else {
       console.error('\nError: Failed to open pull request via "gh pr create".');
     }
-
-    // Clean up
-    try { fs.rmSync(tempPrBodyFile, { force: true }); } catch {}
-    try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
     process.exit(0);
   }
 

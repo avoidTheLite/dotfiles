@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "description": "Style and convention guides. Platform = language baselines (TypeScript, Python) and design/infra. Monorepo = pnpm, Turborepo, workspace layout only. Roles: monorepo, server, client, platform, validation.",
   "default_full_stack_typescript": [
     "ts.platform",

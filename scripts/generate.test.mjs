@@ -7,9 +7,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { escapeJsonString, installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
 import {
+  applyInstallTargets,
   findExistingComponentDirs,
   installComponents,
-  readComponentLibraryMeta,
   resolveComponentInstallTargets,
 } from './lib/components.mjs';
 
@@ -87,20 +87,22 @@ test('installFromConfig renders a React + Express monorepo', () => {
   assert.deepEqual(leftovers, []);
 
   const uiDir = path.join(targetDir, 'apps/web/src/components/ui');
+  const moleculesDir = path.join(targetDir, 'apps/web/src/components/molecules');
   assert.ok(fs.existsSync(path.join(uiDir, 'Button.tsx')));
   assert.ok(fs.existsSync(path.join(uiDir, 'Card.tsx')));
   assert.ok(fs.existsSync(path.join(uiDir, 'utils.ts')));
-  assert.ok(fs.existsSync(path.join(uiDir, '.dotfiles-meta.json')));
-  const uiMeta = JSON.parse(fs.readFileSync(path.join(uiDir, '.dotfiles-meta.json'), 'utf8'));
-  assert.equal(uiMeta.component_library_version, '1.4.1');
+  assert.ok(fs.existsSync(path.join(moleculesDir, 'Field.tsx')));
+  assert.ok(fs.existsSync(path.join(moleculesDir, 'ConfirmDialog.tsx')));
+  assert.ok(fs.existsSync(path.join(moleculesDir, 'EmptyState.tsx')));
+  assert.ok(!fs.existsSync(path.join(uiDir, '.dotfiles-meta.json')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/web/components.json')));
   const appSrc = fs.readFileSync(path.join(targetDir, 'apps/web/src/App.tsx'), 'utf8');
   assert.match(appSrc, /from '\.\/components\/ui\/Button\.tsx'/);
   assert.ok(webPkg.dependencies['class-variance-authority']);
   assert.ok(webPkg.dependencies.clsx);
   assert.ok(webPkg.dependencies['tailwind-merge']);
-  assert.ok(
-    fs.existsSync(path.join(targetDir, 'turbo/generators/templates/ui-components/Button.tsx')),
-  );
+  assert.ok(fs.existsSync(path.join(targetDir, 'turbo/generators/registry/standard-ui.json')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'turbo/generators/lib/components.mjs')));
 });
 
 test('rejects unknown app types', () => {
@@ -160,14 +162,15 @@ test('CLI wrapper follows a PATH symlink to the repo copy of dotfiles.mjs', () =
 
 const cliPath = path.join(dotfilesRoot, 'scripts', 'dotfiles');
 
-test('CLI install-components vendors into an explicit target directory', () => {
+test('CLI install-components installs into an explicit target directory', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-target-'));
   const target = path.join(tmp, 'custom-ui');
   const output = execFileSync(cliPath, ['install-components', target], { encoding: 'utf8' });
-  assert.match(output, /Installed standard UI components/);
-  assert.ok(fs.existsSync(path.join(target, 'Button.tsx')));
-  assert.ok(fs.existsSync(path.join(target, 'utils.ts')));
-  assert.ok(fs.existsSync(path.join(target, '.dotfiles-meta.json')));
+  assert.match(output, /Installed standard UI components via shadcn registry/);
+  assert.ok(fs.existsSync(path.join(target, 'src/components/ui/Button.tsx')));
+  assert.ok(fs.existsSync(path.join(target, 'src/components/ui/utils.ts')));
+  assert.ok(fs.existsSync(path.join(target, 'src/components/molecules/Field.tsx')));
+  assert.ok(!fs.existsSync(path.join(target, 'src/components/ui/.dotfiles-meta.json')));
 });
 
 test('CLI install-components defaults to the current repo frontend ui dir', () => {
@@ -175,14 +178,18 @@ test('CLI install-components defaults to the current repo frontend ui dir', () =
   fs.mkdirSync(path.join(tmp, 'apps', 'web'), { recursive: true });
   fs.writeFileSync(
     path.join(tmp, 'apps', 'web', 'package.json'),
-    JSON.stringify({ name: '@tmp/web', dependencies: { react: '18.3.1' } }),
+    JSON.stringify({
+      name: '@tmp/web',
+      dependencies: { react: '18.3.1', 'react-dom': '18.3.1' },
+    }),
   );
   const output = execFileSync(cliPath, ['install-components'], {
     cwd: tmp,
     encoding: 'utf8',
   });
-  assert.match(output, /apps\/web\/src\/components\/ui/);
+  assert.match(output, /apps\/web/);
   assert.ok(fs.existsSync(path.join(tmp, 'apps/web/src/components/ui/Button.tsx')));
+  assert.ok(fs.existsSync(path.join(tmp, 'apps/web/src/components/molecules/Field.tsx')));
 });
 
 test('CLI install-components refuses the dotfiles source repo without a target', () => {
@@ -192,11 +199,11 @@ test('CLI install-components refuses the dotfiles source repo without a target',
         cwd: dotfilesRoot,
         encoding: 'utf8',
       }),
-    /Refusing to vendor/,
+    /Refusing to install/,
   );
 });
 
-test('resolveComponentInstallTargets prefers existing vendored dirs', () => {
+test('resolveComponentInstallTargets prefers existing installed projects', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-resolve-'));
   const existing = path.join(tmp, 'src', 'components', 'ui');
   installComponents({
@@ -204,20 +211,12 @@ test('resolveComponentInstallTargets prefers existing vendored dirs', () => {
     targetDir: existing,
   });
   const targets = resolveComponentInstallTargets({ repoRoot: tmp });
-  assert.deepEqual(targets, [existing]);
+  assert.deepEqual(targets, [tmp]);
 });
 
-test('readComponentLibraryMeta uses unknown when source metadata is missing', () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-meta-'));
-  assert.deepEqual(readComponentLibraryMeta(tmp), {
-    version: 'unknown',
-    source: 'github.com/avoidTheLite/dotfiles',
-  });
-});
-
-test('findExistingComponentDirs skips cache dirs but still scans turbo sources', () => {
+test('findExistingComponentDirs skips cache dirs but still finds components.json', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-scan-'));
-  const kept = path.join(tmp, 'turbo', 'generators', 'templates', 'ui-components');
+  const kept = path.join(tmp, 'apps', 'web');
   const skipped = [
     path.join(tmp, '.turbo', 'cache', 'ui-components'),
     path.join(tmp, '.next', 'cache', 'ui-components'),
@@ -225,45 +224,62 @@ test('findExistingComponentDirs skips cache dirs but still scans turbo sources',
   ];
 
   fs.mkdirSync(kept, { recursive: true });
-  fs.writeFileSync(path.join(kept, '.dotfiles-meta.json'), '{}');
+  fs.writeFileSync(path.join(kept, 'components.json'), '{}');
 
   for (const dir of skipped) {
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, '.dotfiles-meta.json'), '{}');
+    fs.writeFileSync(path.join(dir, 'components.json'), '{}');
   }
 
   assert.deepEqual(findExistingComponentDirs(tmp), [kept]);
 });
 
-test('generated turbo frontend vendoring rewrites .dotfiles-meta.json', async () => {
+test('applyInstallTargets preserves nested file paths inside ui and molecules targets', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-targets-'));
+  const builtDir = path.join(tmp, 'registry');
+  const projectRoot = path.join(tmp, 'app');
+  const uiDir = path.join(projectRoot, 'custom', 'ui');
+  const moleculesDir = path.join(projectRoot, 'custom', 'molecules');
+
+  fs.mkdirSync(builtDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(builtDir, 'nested.json'),
+    `${JSON.stringify(
+      {
+        files: [
+          {
+            path: 'NestedButton.tsx',
+            target: 'src/components/ui/forms/NestedButton.tsx',
+            type: 'registry:ui',
+          },
+          {
+            path: 'Field/index.ts',
+            target: 'src/components/molecules/forms/Field/index.ts',
+            type: 'registry:component',
+          },
+        ],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  applyInstallTargets({ builtDir, projectRoot, uiDir, moleculesDir });
+
+  const rewritten = JSON.parse(fs.readFileSync(path.join(builtDir, 'nested.json'), 'utf8'));
+  assert.deepEqual(
+    rewritten.files.map((file) => file.target),
+    ['custom/ui/forms/NestedButton.tsx', 'custom/molecules/forms/Field/index.ts'],
+  );
+});
+
+test('generated turbo frontend installs from the copied shadcn registry', async () => {
   const targetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-gen-'));
   installFromConfig({
     targetDir,
     config: { projectName: 'demo' },
     dotfilesRoot,
   });
-
-  const templateMetaPath = path.join(
-    targetDir,
-    'turbo',
-    'generators',
-    'templates',
-    'ui-components',
-    '.dotfiles-meta.json',
-  );
-  fs.writeFileSync(
-    templateMetaPath,
-    `${JSON.stringify(
-      {
-        component_library_version: '1.4.1',
-        tools_version: '1.4.1',
-        source: 'github.com/avoidTheLite/dotfiles',
-        last_synced: '2000-01-01',
-      },
-      null,
-      2,
-    )}\n`,
-  );
 
   const generatedConfig = await import(pathToFileURL(path.join(targetDir, 'turbo/generators/config.js')));
   const actionTypes = new Map();
@@ -274,6 +290,21 @@ test('generated turbo frontend vendoring rewrites .dotfiles-meta.json', async ()
     setGenerator() {},
   });
 
+  const adminDir = path.join(targetDir, 'apps', 'admin');
+  fs.mkdirSync(adminDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(adminDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: '@demo/admin',
+        private: true,
+        type: 'module',
+        dependencies: { react: '^18.3.1', 'react-dom': '^18.3.1' },
+      },
+      null,
+      2,
+    )}\n`,
+  );
   const previousCwd = process.cwd();
   process.chdir(targetDir);
   try {
@@ -282,10 +313,7 @@ test('generated turbo frontend vendoring rewrites .dotfiles-meta.json', async ()
     process.chdir(previousCwd);
   }
 
-  const installedMeta = JSON.parse(
-    fs.readFileSync(path.join(targetDir, 'apps', 'admin', 'src', 'components', 'ui', '.dotfiles-meta.json'), 'utf8'),
-  );
-  assert.equal(installedMeta.component_library_version, '1.4.1');
-  assert.equal(installedMeta.source, 'github.com/avoidTheLite/dotfiles');
-  assert.equal(installedMeta.last_synced, new Date().toISOString().split('T')[0]);
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/admin/src/components/ui/Button.tsx')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/admin/src/components/molecules/Field.tsx')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/admin/components.json')));
 });
