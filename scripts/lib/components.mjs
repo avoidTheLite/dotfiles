@@ -309,6 +309,17 @@ export function classifyInstallTarget(targetDir) {
 export function applyInstallTargets({ builtDir, projectRoot, uiDir, moleculesDir }) {
   const relUi = path.relative(projectRoot, uiDir) || '.';
   const relMolecules = path.relative(projectRoot, moleculesDir) || '.';
+  const findSubpath = (targetPath, prefixSegments) => {
+    const segments = String(targetPath)
+      .split(/[\\/]+/)
+      .filter(Boolean);
+    for (let i = 0; i <= segments.length - prefixSegments.length; i += 1) {
+      if (prefixSegments.every((segment, offset) => segments[i + offset] === segment)) {
+        return segments.slice(i + prefixSegments.length);
+      }
+    }
+    return segments;
+  };
 
   for (const name of fs.readdirSync(builtDir)) {
     if (!name.endsWith('.json') || name === 'registry.json') {
@@ -320,14 +331,18 @@ export function applyInstallTargets({ builtDir, projectRoot, uiDir, moleculesDir
       continue;
     }
     for (const file of item.files) {
-      const basename = path.basename(file.path ?? file.target ?? '');
-      if (!basename) {
+      const sourceTarget = file.target ?? file.path ?? '';
+      if (!sourceTarget) {
         continue;
       }
       const isMolecule =
         file.type === 'registry:component' ||
-        String(file.target ?? file.path ?? '').includes('molecules');
-      file.target = path.join(isMolecule ? relMolecules : relUi, basename);
+        String(sourceTarget).includes('molecules');
+      const relativeTarget = findSubpath(
+        sourceTarget,
+        isMolecule ? MOLECULE_DIR_SEGMENTS : UI_DIR_SEGMENTS,
+      );
+      file.target = path.join(isMolecule ? relMolecules : relUi, ...relativeTarget);
     }
     fs.writeFileSync(fullPath, `${JSON.stringify(item, null, 2)}\n`, 'utf8');
   }

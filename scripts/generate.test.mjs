@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { escapeJsonString, installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
 import {
+  applyInstallTargets,
   findExistingComponentDirs,
   installComponents,
   resolveComponentInstallTargets,
@@ -231,6 +232,45 @@ test('findExistingComponentDirs skips cache dirs but still finds components.json
   }
 
   assert.deepEqual(findExistingComponentDirs(tmp), [kept]);
+});
+
+test('applyInstallTargets preserves nested file paths inside ui and molecules targets', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-ui-targets-'));
+  const builtDir = path.join(tmp, 'registry');
+  const projectRoot = path.join(tmp, 'app');
+  const uiDir = path.join(projectRoot, 'custom', 'ui');
+  const moleculesDir = path.join(projectRoot, 'custom', 'molecules');
+
+  fs.mkdirSync(builtDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(builtDir, 'nested.json'),
+    `${JSON.stringify(
+      {
+        files: [
+          {
+            path: 'NestedButton.tsx',
+            target: 'src/components/ui/forms/NestedButton.tsx',
+            type: 'registry:ui',
+          },
+          {
+            path: 'Field/index.ts',
+            target: 'src/components/molecules/forms/Field/index.ts',
+            type: 'registry:component',
+          },
+        ],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  applyInstallTargets({ builtDir, projectRoot, uiDir, moleculesDir });
+
+  const rewritten = JSON.parse(fs.readFileSync(path.join(builtDir, 'nested.json'), 'utf8'));
+  assert.deepEqual(
+    rewritten.files.map((file) => file.target),
+    ['custom/ui/forms/NestedButton.tsx', 'custom/molecules/forms/Field/index.ts'],
+  );
 });
 
 test('generated turbo frontend installs from the copied shadcn registry', async () => {
