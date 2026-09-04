@@ -76,20 +76,47 @@
             "install": {
               "command": "dotfiles install [target-dir] --config <file.json>",
               "flags": ["--example", "--name <slug>", "--scope <@org>", "--force"],
+              "requires": "empty target unless --force",
               "does": [
                 "copy turbo/plop generators into turbo/generators/ (templates, config.js, installer lib, built shadcn registry)",
                 "copy plopfile.mjs",
-                "render monorepo root (pnpm-workspace.yaml, turbo.json, root package.json, eslint, prettier)",
+                "render monorepo root (pnpm-workspace.yaml, turbo.json, root package.json, .npmrc, eslint, prettier)",
                 "render shared packages required by the config (tsconfig, types, util)",
                 "render apps from the JSON config (frontend_app, node_backend)",
                 "install identity/components via shadcn into each frontend (src/components/ui/ and src/components/molecules/)"
               ],
-              "does_not": ["pnpm install", "start dev servers"],
+              "does_not": [
+                "pnpm install",
+                "start dev servers",
+                "generate backend_service / Python FastAPI (planned, not MVP)"
+              ],
               "next": ["pnpm install", "pnpm dev"]
             },
-            "generate": "dotfiles generate [target-dir] --config <file.json>",
-            "install_components": "dotfiles install-components [target-dir]",
-            "sync_components": "dotfiles sync-components"
+            "generate": {
+              "command": "dotfiles generate [target-dir] --config <file.json>",
+              "same_as": "install",
+              "difference": "always overwrites (force=true)"
+            },
+            "install_components": {
+              "command": "dotfiles install-components [target-dir]",
+              "flags": ["--dry-run"],
+              "does": [
+                "run npx shadcn add against identity/components (or the copied registry)",
+                "write primitives to src/components/ui/ and molecules to src/components/molecules/",
+                "merge pinned npm versions into package.json"
+              ],
+              "does_not": ["pnpm install", "npm install", "copy component TSX by hand"],
+              "versioning": "git SHA via shadcn #ref"
+            },
+            "sync_components": {
+              "command": "dotfiles sync-components",
+              "flags": ["--dry-run", "--force", "--auto"],
+              "does": [
+                "re-install from the shadcn registry into existing component dirs",
+                "commit and open a PR when files change"
+              ],
+              "does_not": ["custom .dotfiles-meta.json version compare"]
+            }
           }
         },
         "preferred_languages": {
@@ -174,9 +201,16 @@
       }
   },
   "package_management": {
+    "roles": {
+      "pnpm": "workspaces, lockfile, dependency install/add",
+      "turborepo": "task graph, cache, generators — not a package manager",
+      "uv": "Python deps and lockfile",
+      "shadcn": "UI source registry; this repo is not an npm package of components"
+    },
     "javascript": {
       "manager": "pnpm",
-      "manager_major": 10,
+      "manager_version": "10.34.5",
+      "packageManager_field": "pnpm@10.34.5",
       "node": ">=22",
       "workspace": {
         "file": "pnpm-workspace.yaml",
@@ -185,35 +219,61 @@
       },
       "lockfile": "pnpm-lock.yaml",
       "commit_lockfile": true,
-      "packageManager_field": "pnpm@10",
-      "install": "pnpm install",
-      "run": "root package.json scripts or pnpm exec turbo",
+      "npmrc": {
+        "shamefully-hoist": true
+      },
+      "onlyBuiltDependencies": ["esbuild"],
+      "commands": {
+        "install": "pnpm install",
+        "add_workspace": "pnpm add <pkg> --filter <workspace>",
+        "add_workspace_dev": "pnpm add -D <pkg> --filter <workspace>",
+        "add_root_dev": "pnpm add -w -D <pkg>",
+        "run_task": "pnpm <script> or pnpm exec turbo run <task>"
+      },
       "forbidden": [
         "turbo install",
         "global turbo before pnpm install",
         "npm/yarn at the workspace root",
         "nested lockfiles or node_modules under apps/ or packages/"
-      ]
+      ],
+      "see": "guides/monorepo/typescript/STYLE_GUIDE.md"
     },
     "python": {
       "manager": "uv",
       "lockfile": "uv.lock",
       "commit_lockfile": true,
       "ci": "uv sync --frozen",
-      "requires_python": ">=3.13,<3.14"
+      "requires_python": ">=3.13,<3.14",
+      "turbo_bridge": "package.json scripts wrap uv run so turbo run lint|test|typecheck hits Python packages",
+      "see": "guides/monorepo/python/STYLE_GUIDE.md"
     },
     "turborepo": {
-      "invoke": "pnpm exec turbo or root scripts (build, dev, lint, test, typecheck, gen)",
+      "role": "task runner after pnpm owns install",
+      "installed_as": "root devDependency (turbo@^2.10.12, @turbo/gen@^2.10.12)",
+      "invoke": "pnpm <script> or pnpm exec turbo — never a global turbo binary before pnpm install",
       "never_global_turbo_before_install": true,
+      "root_scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "test": "turbo run test",
+        "typecheck": "turbo run typecheck",
+        "format": "prettier --write .",
+        "gen": "turbo gen"
+      },
       "task_dependsOn": {
         "build": ["^build"],
         "test": ["^build"],
         "lint": ["^build"],
-        "format": ["^build"],
         "typecheck": ["^build"]
       },
       "skip_missing_build_in_source_packages": true,
-      "generators": "after pnpm install: pnpm exec turbo gen; frontend_app installs from the copied shadcn registry"
+      "generators": {
+        "when": "after pnpm install",
+        "command": "pnpm exec turbo gen",
+        "available": ["frontend_app", "node_backend"],
+        "frontend_app_installs": "copied shadcn registry at turbo/generators/registry"
+      }
     },
     "components_registry": {
       "type": "shadcn_source_registry",
@@ -230,6 +290,7 @@
         "primitives": "src/components/ui/",
         "molecules": "src/components/molecules/"
       },
+      "npm_deps": "pinned in registry JSON; installer merges into package.json and does not run npm install",
       "forbidden": [
         "copy component TSX by hand",
         "custom .dotfiles-meta.json version fields",
@@ -237,6 +298,10 @@
       ]
     },
     "dotfiles_versioning": {
+      "this_repo": {
+        "not_an_npm_package": true,
+        "consume": "git clone or SHA pin — never npm publish/install of dotfiles"
+      },
       "source_of_truth": "git_commit_sha",
       "downstream_pin": "dotfiles commit SHA",
       "component_pin": "same git SHA via shadcn #ref",
