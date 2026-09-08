@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.3.0",
-    "last_updated": "2026-09-04",
+    "version": "2.4.0",
+    "last_updated": "2026-09-08",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -324,6 +324,31 @@
     "scaffold_config": {
       "schema": "./identity/generation/scaffold-config.schema.json",
       "example": "./identity/generation/examples/react-node-monorepo.json"
+    },
+    "dev_loops": {
+      "plan": "./identity/generation/DEV_LOOPS.md",
+      "shared_kernel": [
+        "dotfiles install / installFromConfig",
+        "scenario fixtures and golden inspect/compare",
+        "ports schema with web=5173 api=3000 defaults",
+        "Pino createLogger({ module })"
+      ],
+      "flows": {
+        "ci_goldens": "GitHub Actions node:test against committed path+hash goldens. No LLM, Docker, or ports.",
+        "agent_inspect_fix": "Skill + prompt adapter with gitignored prompt cache. Generate, inspect with the CI compare, patch, re-run.",
+        "homelab_docker": "Image the generated web and/or api. Publish ports from the operator file, else ports.defaults.json."
+      },
+      "ports": {
+        "schema": "./identity/generation/ports.schema.json",
+        "defaults": "./identity/generation/examples/ports.defaults.json",
+        "operator_file": "supplied later; not required in git",
+        "loader_order": ["DOTFILES_PORTS_FILE", "operator file", "defaults"]
+      },
+      "prompt_cache": {
+        "directory": ".dotfiles-cache/",
+        "gitignored": true,
+        "ci": false
+      }
     }
   },
   "uncategorized": {

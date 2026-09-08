@@ -4,6 +4,7 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Documented three generation dev loops (CI goldens, agent generate-inspect-fix, homelab Docker + port forward) in `identity/generation/DEV_LOOPS.md`, including what is shared vs split. Added a ports JSON schema and committed defaults (`web=5173`, `api=3000`); the operator ports file is still out of tree. Gitignored `.dotfiles-cache/` for prompt replay. Bumped workspace-standards to 2.4.0 with a `generation_conventions.dev_loops` object.
 - Turned `identity/components` into a shadcn source registry (primitives in `ui/`, new molecular components in `molecules/`) with a root `registry.json` so installs can use `npx shadcn add avoidTheLite/dotfiles/<item>#<git-sha>`.
 - `dotfiles install-components`, `dotfiles install`, and turbo `frontend_app` now install UI files through `npx shadcn add` instead of copying source files, and they install molecules (Field, ConfirmDialog, EmptyState) alongside the primitives.
 - Removed the custom `.dotfiles-meta.json` component-library version files. Sync and install now follow shadcn/git SHA versioning.

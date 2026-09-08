@@ -21,6 +21,12 @@ script: install with [pre-commit](https://pre-commit.com) and `pre-commit instal
 in CI via [config/branch-standards.json](config/branch-standards.json) — copy and edit that file in other
 repos to set your own pattern.
 
+Generation, agent inspect-fix, and homelab Docker share one generator kernel. The contract for what is
+shared vs split is [identity/generation/DEV_LOOPS.md](identity/generation/DEV_LOOPS.md). Published ports
+default to **5173** (web) and **3000** (api) via
+[identity/generation/examples/ports.defaults.json](identity/generation/examples/ports.defaults.json); an
+operator ports file is loaded later and is not required in git.
+
 ## Repository layout
 
 ```text
@@ -35,7 +41,7 @@ dotfiles/
 │   ├── workspace-standards.json # standards source of truth (JSON)
 │   ├── components/             # shadcn registry (ui primitives + molecules)
 │   ├── scaffolding/            # turbo/plop templates for monorepo generation
-│   └── generation/             # capability manifest + example JSON configs
+│   └── generation/             # capability manifest, example JSON, dev-loop contract, ports schema
 ├── agent-skills/
 │   ├── skills/                 # reusable agent skills (SKILL.md)
 │   └── prompts/                # portable copies of those skills

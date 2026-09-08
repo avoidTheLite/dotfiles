@@ -41,6 +41,19 @@ function leftoverHandlebars(dir) {
   return leftovers;
 }
 
+test('ports defaults match the ports schema defaults', () => {
+  const generationDir = path.join(dotfilesRoot, 'identity', 'generation');
+  const schema = JSON.parse(fs.readFileSync(path.join(generationDir, 'ports.schema.json'), 'utf8'));
+  const defaults = JSON.parse(
+    fs.readFileSync(path.join(generationDir, 'examples', 'ports.defaults.json'), 'utf8'),
+  );
+  assert.equal(defaults.web, schema.properties.web.default);
+  assert.equal(defaults.api, schema.properties.api.default);
+  assert.equal(defaults.bind, schema.properties.bind.default);
+  assert.equal(defaults.web, 5173);
+  assert.equal(defaults.api, 3000);
+});
+
 test('normalizeConfig applies React + Node defaults', () => {
   const config = normalizeConfig({ projectName: 'acme' });
   assert.equal(config.scope, '@acme');

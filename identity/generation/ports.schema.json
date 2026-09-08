@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DotfilesDevPorts",
+  "description": "Host ports for generated web and api. Loaders fall back to identity/generation/examples/ports.defaults.json when the operator file is absent. Do not put LAN hostnames or secrets in the committed defaults.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["web", "api"],
+  "properties": {
+    "web": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 5173,
+      "description": "Vite / frontend published port (container and default host)."
+    },
+    "api": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 3000,
+      "description": "Express service published port (container and default host)."
+    },
+    "bind": {
+      "type": "string",
+      "default": "0.0.0.0",
+      "description": "Address containers publish on. Homelab LAN uses 0.0.0.0; local-only can use 127.0.0.1."
+    }
+  }
+}

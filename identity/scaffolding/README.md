@@ -26,6 +26,8 @@ dotfiles install --config ~/dotfiles/identity/generation/examples/react-node-mon
 
 That command copies these generators into the target (`turbo/generators/`) and renders a starter monorepo from the JSON object. Each frontend app installs the standard UI library through the shadcn registry (primitives at `src/components/ui/`, molecules at `src/components/molecules/`). After `pnpm install`, `pnpm exec turbo gen` can add another frontend or Node service using the same registry.
 
+How CI goldens, the agent inspect-fix loop, and homelab Docker share this CLI (and what they do not share) is in [identity/generation/DEV_LOOPS.md](../generation/DEV_LOOPS.md).
+
 To install the library into an existing repo without generating a new monorepo:
 
 ```sh
