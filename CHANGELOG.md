@@ -4,7 +4,7 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
-- Added `AGENTS.md` as the agent entry point (test-app scaffold, skills, CLI from the current clone). `scripts/install.sh` and `scripts/init-project.sh` now resolve the repo from the script path instead of hardcoding `~/dotfiles`.
+- Added `AGENTS.md` as the agent entry point. Routes split **new application / service / product** (unnamed requests use `--example` as `demo` / `@demo`) from **existing repo** (shadcn `install-components`, or `turbo gen` for another app). `scripts/install.sh` and `scripts/init-project.sh` resolve the repo from the script path instead of hardcoding `~/dotfiles`.
 - Ports are a committed `config/ports.json` plus dotenv (`.env.example` / gitignored `.env`). CI runs `scripts/validate/ports.mjs`. `dotfiles install` writes the same files into generated repos. Host bind defaults to `127.0.0.1`; LAN uses `BIND=0.0.0.0`. Prompt cache is documented as `get`/`set` so Redis or SQLite can replace the filesystem store. Bumped workspace-standards to 2.5.0.
 - Documented three generation dev loops (CI goldens, agent generate-inspect-fix, homelab Docker + port forward) in `identity/generation/DEV_LOOPS.md`, including what is shared vs split. Gitignored `.dotfiles-cache/` for prompt replay.
 - Turned `identity/components` into a shadcn source registry (primitives in `ui/`, new molecular components in `molecules/`) with a root `registry.json` so installs can use `npx shadcn add avoidTheLite/dotfiles/<item>#<git-sha>`.

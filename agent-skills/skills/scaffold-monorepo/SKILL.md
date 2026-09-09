@@ -1,6 +1,6 @@
 ---
 name: scaffold-monorepo
-description: Scaffolds a new pnpm + Turborepo monorepo with a React 18 Vite + Tailwind app and an Express 5 Node service using the dotfiles CLI (turbo gen / plop templates). Trigger on "scaffold a new app," "scaffold the test app," "generate a monorepo," "create a React and Node repo," "use the turbo generator," "dotfiles install," or any request to stand up a fullstack TypeScript workspace from these dotfiles. Do NOT hand-write turbo.json, pnpm-workspace.yaml, or starter apps/packages. NOT for a single non-monorepo folder (use scripts/init-project.sh / project-template) and NOT for Python FastAPI (backend_service is planned, not generated).
+description: Scaffolds a new pnpm + Turborepo monorepo with a React 18 Vite + Tailwind app and an Express 5 Node service using the dotfiles CLI (turbo gen / plop templates). Trigger on any request to create a new application, service, product, or monorepo ("scaffold," "generate," "create a new …," "dotfiles install"). If no project name is given, use the committed example (demo / @demo) and `scripts/dotfiles install /tmp/demo --example`. Do NOT hand-write turbo.json, pnpm-workspace.yaml, or starter apps/packages. NOT for adding UI to an existing repo (use install-components / the shadcn registry), NOT for a single non-monorepo folder (scripts/init-project.sh), and NOT for Python FastAPI (backend_service is planned, not generated).
 ---
 
 # Scaffold a React + Node monorepo
@@ -17,11 +17,12 @@ Use this skill when the user wants a **new** pnpm + Turborepo workspace with:
 - `apps/api` — Express 5 TypeScript service (`/health`, `/api/hello`)
 - `packages/tsconfig`, `packages/types`, `packages/util`
 
-Hand off instead of using this skill when:
+Hand off instead of using this skill when (see [AGENTS.md](../../../AGENTS.md) routes):
 
+- They want **UI in an existing repo** → `scripts/dotfiles install-components` (shadcn registry)
+- They want to **add an app to an already generated repo** → after `pnpm install`, `pnpm exec turbo gen frontend_app` or `pnpm exec turbo gen node_backend`
 - They want a **single** non-monorepo folder → `scripts/init-project.sh`
 - They want a **Python FastAPI** service → say the `backend_service` generator is planned, not available
-- They want to **add an app to an already generated repo** → after `pnpm install`, `pnpm exec turbo gen frontend_app` or `pnpm exec turbo gen node_backend`
 
 ## Prerequisites
 
@@ -31,12 +32,12 @@ Hand off instead of using this skill when:
 
 ## Session flow
 
-### 0. "Scaffold the test app"
+### 0. No name in the request
 
-If that is the whole request, skip the name questions. From the **dotfiles repo root**:
+If they asked to create a new application, service, or product and **did not name it**, do not invent names and do not ask. From the **dotfiles repo root**:
 
 ```sh
-scripts/dotfiles install /tmp/dotfiles-test-app --example
+scripts/dotfiles install /tmp/demo --example
 ```
 
 That uses `identity/generation/examples/react-node-monorepo.json` (`demo` / `@demo`). Confirm `config/ports.json` and `.env.example` in the target. Stop unless asked to run `pnpm install`.

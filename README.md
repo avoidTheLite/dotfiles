@@ -33,7 +33,7 @@ copy [.env.example](.env.example) to `.env` (gitignored).
 
 ```text
 dotfiles/
-├── AGENTS.md                   # agent entry point (skills, test-app scaffold)
+├── AGENTS.md                   # agent entry point (new app vs existing repo routes)
 ├── CHANGELOG.md
 ├── .env.example                # dotenv overrides for config/ports.json
 ├── STYLE_GUIDE_JAVASCRIPT.md   # legacy style guide index
@@ -115,13 +115,13 @@ pnpm install
 pnpm dev
 ```
 
-The **test app** (canonical names, no extra flags) is:
+If no project name is given, `--example` uses [identity/generation/examples/react-node-monorepo.json](identity/generation/examples/react-node-monorepo.json) (`demo` / `@demo`):
 
 ```sh
-scripts/dotfiles install /tmp/dotfiles-test-app --example
+scripts/dotfiles install /tmp/demo --example
 ```
 
-That uses [identity/generation/examples/react-node-monorepo.json](identity/generation/examples/react-node-monorepo.json) (`demo` / `@demo`) and writes `config/ports.json` plus `.env.example` into the target.
+That writes `config/ports.json` plus `.env.example` into the target. Agents route this from [AGENTS.md](AGENTS.md).
 
 Do not run `turbo install`. That uses a global Turbo binary (often an older 2.5.x) before dependencies exist, so you will see a missing lockfile and a missing `install` task. `pnpm install` creates the lockfile and installs the repo's Turbo 2.10.x; after that, use `pnpm exec turbo` or the root `pnpm` scripts.
 
