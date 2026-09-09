@@ -1,6 +1,6 @@
 ---
 name: scaffold-monorepo
-description: Scaffolds a new pnpm + Turborepo monorepo with a React 18 Vite + Tailwind app and an Express 5 Node service using the dotfiles CLI (turbo gen / plop templates). Trigger on "scaffold a new app," "generate a monorepo," "create a React and Node repo," "use the turbo generator," "dotfiles install," or any request to stand up a fullstack TypeScript workspace from these dotfiles. Do NOT hand-write turbo.json, pnpm-workspace.yaml, or starter apps/packages. NOT for a single non-monorepo folder (use scripts/init-project.sh / project-template) and NOT for Python FastAPI (backend_service is planned, not generated).
+description: Scaffolds a new pnpm + Turborepo monorepo with a React 18 Vite + Tailwind app and an Express 5 Node service using the dotfiles CLI (turbo gen / plop templates). Trigger on "scaffold a new app," "scaffold the test app," "generate a monorepo," "create a React and Node repo," "use the turbo generator," "dotfiles install," or any request to stand up a fullstack TypeScript workspace from these dotfiles. Do NOT hand-write turbo.json, pnpm-workspace.yaml, or starter apps/packages. NOT for a single non-monorepo folder (use scripts/init-project.sh / project-template) and NOT for Python FastAPI (backend_service is planned, not generated).
 ---
 
 # Scaffold a React + Node monorepo
@@ -25,11 +25,21 @@ Hand off instead of using this skill when:
 
 ## Prerequisites
 
-1. The dotfiles repo is available (typically `~/dotfiles`).
-2. The CLI is on `PATH` after `sh ~/dotfiles/scripts/install.sh` (`~/.local/bin/dotfiles`). If `dotfiles` is missing, run that install script or invoke `~/dotfiles/scripts/dotfiles` directly.
+1. This clone is the source of truth (see [AGENTS.md](../../../AGENTS.md)). It may not be at `~/dotfiles`.
+2. Invoke `scripts/dotfiles` from the repo root, or `dotfiles` on PATH after `sh scripts/install.sh`.
 3. **Node 22+** and **pnpm 10** are installed. Do not use a global `turbo` binary for install.
 
 ## Session flow
+
+### 0. "Scaffold the test app"
+
+If that is the whole request, skip the name questions. From the **dotfiles repo root**:
+
+```sh
+scripts/dotfiles install /tmp/dotfiles-test-app --example
+```
+
+That uses `identity/generation/examples/react-node-monorepo.json` (`demo` / `@demo`). Confirm `config/ports.json` and `.env.example` in the target. Stop unless asked to run `pnpm install`.
 
 ### 1. Confirm target and names
 
@@ -87,10 +97,10 @@ dotfiles install ./my-app --config ./scaffold.json
 If `dotfiles` is not on `PATH`:
 
 ```sh
-~/dotfiles/scripts/dotfiles install --example --name my-app --scope @my-app
+scripts/dotfiles install --example --name my-app --scope @my-app
 ```
 
-The CLI copies turbo/plop generators into the target (`turbo/generators/`), renders the workspace, and installs the `identity/components` shadcn registry into each frontend (`src/components/ui/` and `src/components/molecules/`). Use `--force` only when the user explicitly wants to overwrite a non-empty directory.
+The CLI copies turbo/plop generators into the target (`turbo/generators/`), renders the workspace, writes `config/ports.json` and `.env.example`, and installs the `identity/components` shadcn registry into each frontend (`src/components/ui/` and `src/components/molecules/`). Use `--force` only when the user explicitly wants to overwrite a non-empty directory.
 
 To install the same library into an existing repo without generating a monorepo:
 
@@ -110,7 +120,7 @@ pnpm test
 pnpm dev
 ```
 
-Web is http://localhost:5173 and proxies `/api` to the Node service on port 3000.
+Web and API ports come from `config/ports.json` (dotenv `.env` overrides). Defaults: http://127.0.0.1:5173 and API 3000.
 
 ### 5. Adding more apps later
 

@@ -7,6 +7,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { componentsSourceDir, installComponents, buildRegistry } from './components.mjs';
+import {
+  loadAndValidateRepoPorts,
+  schemaDefaultPorts,
+  portsSchemaPath,
+  writeGeneratedPorts,
+} from './ports.mjs';
 
 const APP_TYPE_TO_TEMPLATE = {
   frontend_app: 'web-frontend',
@@ -344,6 +350,12 @@ export function installFromConfig({ targetDir, config, dotfilesRoot, force = fal
       created.push(...uiResult.files);
     }
   }
+
+  const schema = JSON.parse(fs.readFileSync(portsSchemaPath(dotfilesRoot), 'utf8'));
+  const ports = fs.existsSync(path.join(dotfilesRoot, 'config', 'ports.json'))
+    ? loadAndValidateRepoPorts(dotfilesRoot)
+    : schemaDefaultPorts(schema);
+  created.push(...writeGeneratedPorts({ targetDir, ports }));
 
   return { config: normalized, created };
 }

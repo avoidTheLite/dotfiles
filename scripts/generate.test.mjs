@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { escapeJsonString, installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
+import { validatePortsObject } from './lib/ports.mjs';
 import {
   applyInstallTargets,
   findExistingComponentDirs,
@@ -41,17 +42,25 @@ function leftoverHandlebars(dir) {
   return leftovers;
 }
 
-test('ports defaults match the ports schema defaults', () => {
-  const generationDir = path.join(dotfilesRoot, 'identity', 'generation');
-  const schema = JSON.parse(fs.readFileSync(path.join(generationDir, 'ports.schema.json'), 'utf8'));
-  const defaults = JSON.parse(
-    fs.readFileSync(path.join(generationDir, 'examples', 'ports.defaults.json'), 'utf8'),
+test('committed ports file matches the ports schema defaults', () => {
+  const schema = JSON.parse(
+    fs.readFileSync(path.join(dotfilesRoot, 'identity', 'generation', 'ports.schema.json'), 'utf8'),
   );
-  assert.equal(defaults.web, schema.properties.web.default);
-  assert.equal(defaults.api, schema.properties.api.default);
-  assert.equal(defaults.bind, schema.properties.bind.default);
-  assert.equal(defaults.web, 5173);
-  assert.equal(defaults.api, 3000);
+  const ports = JSON.parse(fs.readFileSync(path.join(dotfilesRoot, 'config', 'ports.json'), 'utf8'));
+  assert.equal(ports.web, schema.properties.web.default);
+  assert.equal(ports.api, schema.properties.api.default);
+  assert.equal(ports.bind, schema.properties.bind.default);
+  assert.equal(ports.web, 5173);
+  assert.equal(ports.api, 3000);
+  assert.equal(ports.bind, '127.0.0.1');
+});
+
+test('validatePortsObject rejects unknown keys and bad ports', () => {
+  const defaults = { web: 5173, api: 3000, bind: '127.0.0.1' };
+  assert.throws(() => validatePortsObject({ web: 5173, api: 3000, extra: 1 }, defaults), /unknown keys/);
+  assert.throws(() => validatePortsObject({ web: 0, api: 3000 }, defaults), /web/);
+  const ok = validatePortsObject({ web: 5173, api: 3000 }, defaults);
+  assert.equal(ok.bind, '127.0.0.1');
 });
 
 test('normalizeConfig applies React + Node defaults', () => {
@@ -116,6 +125,18 @@ test('installFromConfig renders a React + Express monorepo', () => {
   assert.ok(webPkg.dependencies['tailwind-merge']);
   assert.ok(fs.existsSync(path.join(targetDir, 'turbo/generators/registry/standard-ui.json')));
   assert.ok(fs.existsSync(path.join(targetDir, 'turbo/generators/lib/components.mjs')));
+  const generatedPorts = JSON.parse(
+    fs.readFileSync(path.join(targetDir, 'config', 'ports.json'), 'utf8'),
+  );
+  assert.equal(generatedPorts.web, 5173);
+  assert.equal(generatedPorts.api, 3000);
+  assert.equal(generatedPorts.bind, '127.0.0.1');
+  const envExample = fs.readFileSync(path.join(targetDir, '.env.example'), 'utf8');
+  assert.match(envExample, /^WEB_PORT=5173$/m);
+  assert.match(envExample, /^API_PORT=3000$/m);
+  assert.match(envExample, /^BIND=127\.0\.0\.1$/m);
+  const generatedGitignore = fs.readFileSync(path.join(targetDir, '.gitignore'), 'utf8');
+  assert.match(generatedGitignore, /!\.env\.example/);
 });
 
 test('rejects unknown app types', () => {

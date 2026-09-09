@@ -4,7 +4,9 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
-- Documented three generation dev loops (CI goldens, agent generate-inspect-fix, homelab Docker + port forward) in `identity/generation/DEV_LOOPS.md`, including what is shared vs split. Added a ports JSON schema and committed defaults (`web=5173`, `api=3000`); the operator ports file is still out of tree. Gitignored `.dotfiles-cache/` for prompt replay. Bumped workspace-standards to 2.4.0 with a `generation_conventions.dev_loops` object.
+- Added `AGENTS.md` as the agent entry point (test-app scaffold, skills, CLI from the current clone). `scripts/install.sh` and `scripts/init-project.sh` now resolve the repo from the script path instead of hardcoding `~/dotfiles`.
+- Ports are a committed `config/ports.json` plus dotenv (`.env.example` / gitignored `.env`). CI runs `scripts/validate/ports.mjs`. `dotfiles install` writes the same files into generated repos. Host bind defaults to `127.0.0.1`; LAN uses `BIND=0.0.0.0`. Prompt cache is documented as `get`/`set` so Redis or SQLite can replace the filesystem store. Bumped workspace-standards to 2.5.0.
+- Documented three generation dev loops (CI goldens, agent generate-inspect-fix, homelab Docker + port forward) in `identity/generation/DEV_LOOPS.md`, including what is shared vs split. Gitignored `.dotfiles-cache/` for prompt replay.
 - Turned `identity/components` into a shadcn source registry (primitives in `ui/`, new molecular components in `molecules/`) with a root `registry.json` so installs can use `npx shadcn add avoidTheLite/dotfiles/<item>#<git-sha>`.
 - `dotfiles install-components`, `dotfiles install`, and turbo `frontend_app` now install UI files through `npx shadcn add` instead of copying source files, and they install molecules (Field, ConfirmDialog, EmptyState) alongside the primitives.
 - Removed the custom `.dotfiles-meta.json` component-library version files. Sync and install now follow shadcn/git SHA versioning.

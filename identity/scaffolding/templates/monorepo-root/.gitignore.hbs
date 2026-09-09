@@ -6,9 +6,11 @@ dist/
 coverage/
 .turbo/
 
-# environment files
+# environment files (dotenv: commit .env.example, never .env)
 .env
-.env.*
+.env.local
+.env.*.local
+!.env.example
 
 # logs
 *.log

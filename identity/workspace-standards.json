@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.4.0",
-    "last_updated": "2026-09-08",
+    "version": "2.5.0",
+    "last_updated": "2026-09-09",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -330,24 +330,29 @@
       "shared_kernel": [
         "dotfiles install / installFromConfig",
         "scenario fixtures and golden inspect/compare",
-        "ports schema with web=5173 api=3000 defaults",
-        "Pino createLogger({ module })"
+        "config/ports.json plus dotenv (.env.example)",
+        "Pino createLogger({ module })",
+        "PromptCache get/set keyed by sha256(prompt + git SHA + scenario)"
       ],
       "flows": {
-        "ci_goldens": "GitHub Actions node:test against committed path+hash goldens. No LLM, Docker, or ports.",
-        "agent_inspect_fix": "Skill + prompt adapter with gitignored prompt cache. Generate, inspect with the CI compare, patch, re-run.",
-        "homelab_docker": "Image the generated web and/or api. Publish ports from the operator file, else ports.defaults.json."
+        "ci_goldens": "GitHub Actions node:test against committed path+hash goldens. Ports file required. No LLM, Docker, or listen.",
+        "agent_inspect_fix": "Skill + prompt adapter with PromptCache get/set (filesystem v1; Redis or SQLite later). Generate, inspect with the CI compare, patch, re-run.",
+        "homelab_docker": "Image the generated web and/or api. Publish ports from dotenv then config/ports.json then schema defaults."
       },
       "ports": {
         "schema": "./identity/generation/ports.schema.json",
-        "defaults": "./identity/generation/examples/ports.defaults.json",
-        "operator_file": "supplied later; not required in git",
-        "loader_order": ["DOTFILES_PORTS_FILE", "operator file", "defaults"]
+        "file": "./config/ports.json",
+        "dotenv_example": "./.env.example",
+        "loader_order": ["WEB_PORT API_PORT BIND", "config/ports.json", "schema defaults"],
+        "ci": "scripts/validate/ports.mjs"
       },
       "prompt_cache": {
-        "directory": ".dotfiles-cache/",
+        "interface": "get(key)/set(key, record)",
+        "key": "sha256(prompt bytes + git SHA + canonical scenario JSON)",
+        "filesystem": ".dotfiles-cache/",
         "gitignored": true,
-        "ci": false
+        "ci": false,
+        "alternate_backends": ["redis", "sqlite"]
       }
     }
   },

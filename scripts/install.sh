@@ -2,7 +2,9 @@
 
 set -eu
 
-DOTFILES_DIR="${HOME}/dotfiles"
+# Repo this script lives in (not a hardcoded ~/dotfiles path).
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+DOTFILES_DIR="$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)"
 SOURCE_SETTINGS="${DOTFILES_DIR}/vscode/settings.json"
 
 if [ ! -f "${SOURCE_SETTINGS}" ]; then
