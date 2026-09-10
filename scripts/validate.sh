@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 if ! command -v node &>/dev/null; then
-  echo "error: node is required for validation (install Node 20+ for local use)."
+  echo "error: node is required for validation (install Node 22 for local use)."
   exit 1
 fi
 

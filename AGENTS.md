@@ -66,4 +66,4 @@ Portable prompt copies: [agent-skills/prompts/](agent-skills/prompts/).
 - Machine editor/CLI symlinks: `sh scripts/install.sh` (uses the directory this script lives in).
 - Validate: `bash scripts/validate.sh`.
 - Contract for CI goldens, agent inspect-fix, and homelab Docker: [identity/generation/DEV_LOOPS.md](identity/generation/DEV_LOOPS.md).
-- Ports: committed [config/ports.json](config/ports.json) (CI-validated). Overrides via dotenv ([.env.example](.env.example) → gitignored `.env`). Schema: [identity/generation/ports.schema.json](identity/generation/ports.schema.json).
+- Ports: committed [config/ports.json](config/ports.json) (CI-validated). [.env.example](.env.example) is the intended dotenv override (gitignored `.env`); generated Vite/Express do not load it yet. Schema: [identity/generation/ports.schema.json](identity/generation/ports.schema.json).

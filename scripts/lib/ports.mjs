@@ -1,6 +1,7 @@
 /**
  * Ports contract for this repo and for generated monorepos.
- * Loader order (dotenv standard): process.env → config/ports.json → schema defaults.
+ * Intended loader order (not wired in generated Vite/Express yet):
+ * process.env → config/ports.json → schema defaults.
  * There is no fallback to an example file.
  */
 import fs from 'node:fs';
@@ -45,10 +46,22 @@ export function schemaDefaultPorts(schema) {
   if (!properties?.web || !properties?.api || !properties?.bind) {
     throw new Error('Ports schema must define web, api, and bind');
   }
+  const webDefault = properties.web.default;
+  const apiDefault = properties.api.default;
+  const bindDefault = properties.bind.default;
+  if (!Number.isInteger(webDefault) || webDefault < 1 || webDefault > 65535) {
+    throw new Error('Ports schema web.default must be an integer 1–65535');
+  }
+  if (!Number.isInteger(apiDefault) || apiDefault < 1 || apiDefault > 65535) {
+    throw new Error('Ports schema api.default must be an integer 1–65535');
+  }
+  if (typeof bindDefault !== 'string' || bindDefault.trim() === '') {
+    throw new Error('Ports schema bind.default must be a non-empty address string');
+  }
   return {
-    web: Number(properties.web.default),
-    api: Number(properties.api.default),
-    bind: String(properties.bind.default),
+    web: webDefault,
+    api: apiDefault,
+    bind: bindDefault.trim(),
   };
 }
 
@@ -89,7 +102,7 @@ export function validatePortsObject(value, defaults) {
  */
 export function formatEnvExample(ports) {
   return [
-    '# Copy to .env (gitignored). Values here override config/ports.json.',
+    '# Copy to .env (gitignored). Intended overrides for config/ports.json; generated Vite/API do not read these yet.',
     `${ENV_KEYS.web}=${ports.web}`,
     `${ENV_KEYS.api}=${ports.api}`,
     `${ENV_KEYS.bind}=${ports.bind}`,

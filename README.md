@@ -26,8 +26,9 @@ repos to set your own pattern.
 Generation, agent inspect-fix, and homelab Docker share one generator kernel. Install and generate run
 dev-loop validation (ports file, generator tests) so the output is checkable;
 [identity/generation/DEV_LOOPS.md](identity/generation/DEV_LOOPS.md) is the contract. Ports live in
-[config/ports.json](config/ports.json) (`web=5173`, `api=3000`, `bind=127.0.0.1`). Override with dotenv:
-copy [.env.example](.env.example) to `.env` (gitignored).
+[config/ports.json](config/ports.json) (`web=5173`, `api=3000`, `bind=127.0.0.1`).
+[.env.example](.env.example) is the intended dotenv override (gitignored `.env`); generated Vite/Express
+do not read it yet.
 
 ## Repository layout
 
@@ -35,7 +36,7 @@ copy [.env.example](.env.example) to `.env` (gitignored).
 dotfiles/
 ├── AGENTS.md                   # agent entry point (new app vs existing repo routes)
 ├── CHANGELOG.md
-├── .env.example                # dotenv overrides for config/ports.json
+├── .env.example                # intended dotenv overrides (not loaded by generated apps yet)
 ├── STYLE_GUIDE_JAVASCRIPT.md   # legacy style guide index
 ├── .github/
 │   └── workflows/validate.yml

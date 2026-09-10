@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { escapeJsonString, installFromConfig, normalizeConfig } from './lib/scaffold.mjs';
-import { validatePortsObject } from './lib/ports.mjs';
+import { validatePortsObject, schemaDefaultPorts } from './lib/ports.mjs';
 import {
   applyInstallTargets,
   findExistingComponentDirs,
@@ -61,6 +61,20 @@ test('validatePortsObject rejects unknown keys and bad ports', () => {
   assert.throws(() => validatePortsObject({ web: 0, api: 3000 }, defaults), /web/);
   const ok = validatePortsObject({ web: 5173, api: 3000 }, defaults);
   assert.equal(ok.bind, '127.0.0.1');
+});
+
+test('schemaDefaultPorts rejects missing or invalid defaults', () => {
+  assert.throws(
+    () => schemaDefaultPorts({ properties: { web: {}, api: { default: 3000 }, bind: { default: '127.0.0.1' } } }),
+    /web\.default/,
+  );
+  assert.throws(
+    () =>
+      schemaDefaultPorts({
+        properties: { web: { default: 5173 }, api: { default: 3000 }, bind: { default: '' } },
+      }),
+    /bind\.default/,
+  );
 });
 
 test('normalizeConfig applies React + Node defaults', () => {

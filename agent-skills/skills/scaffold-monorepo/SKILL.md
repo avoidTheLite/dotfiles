@@ -121,7 +121,7 @@ pnpm test
 pnpm dev
 ```
 
-Web and API ports come from `config/ports.json` (dotenv `.env` overrides). Defaults: http://127.0.0.1:5173 and API 3000.
+Vite listens on http://127.0.0.1:5173 and proxies `/api` to port 3000. The API reads `process.env.PORT` (default 3000). `config/ports.json` and `.env.example` record the intended homelab/docker ports contract; generated apps do not load them yet.
 
 ### 5. Adding more apps later
 

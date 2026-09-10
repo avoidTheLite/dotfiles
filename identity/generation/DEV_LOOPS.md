@@ -88,7 +88,7 @@ generate (or use an existing target)
 
 1. Build images from the generated tree (client, service, or both). Tag with the **dotfiles git SHA** plus the scenario id so “that version” is reproducible.
 2. A small compose file or `scripts/` runner on the home server starts the containers. Ports come from dotenv (`WEB_PORT`, `API_PORT`, `BIND`) then `config/ports.json`. Schema defaults fill a missing key only; there is no second example JSON file.
-3. Vite’s `/api` proxy target and the API listen port follow the same object. Host **bind** defaults to `127.0.0.1`. Homelab LAN sets `BIND=0.0.0.0` in `.env`. Inside a container the process still listens on `0.0.0.0`; `bind` is the host publish address.
+3. When the runtime loader exists, Vite’s `/api` proxy target and the API listen port follow the same object. Until then, generated apps keep template ports (Vite 5173 → `localhost:3000`, API `PORT` default 3000). Host **bind** defaults to `127.0.0.1`. Homelab LAN will set `BIND=0.0.0.0` in `.env`. Inside a container the process still listens on `0.0.0.0`; `bind` is the host publish address.
 4. v1 LAN access is **published ports** on the home server (firewall + bind). Compose `ports:` is the forward.
 
 **Does not:** change golden files, call the prompt cache, or require GitHub-hosted runners to reach the LAN.
@@ -100,7 +100,7 @@ generate (or use an existing target)
 - dotenv: [.env.example](../../.env.example) committed; `.env` gitignored
 - Generated repos receive the same `config/ports.json` + `.env.example` from `dotfiles install`
 
-Loader order:
+Loader order (intended for the homelab/docker script; generated Vite still hardcodes 5173 and the API uses `process.env.PORT`):
 
 1. Environment (`WEB_PORT`, `API_PORT`, `BIND`), including values loaded from `.env`
 2. `config/ports.json` in the repo being run (this tree or the generated app)

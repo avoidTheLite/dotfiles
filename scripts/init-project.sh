@@ -8,8 +8,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 PROJECT_NAME="$1"
-SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-DOTFILES_DIR="$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_DIR="$(CDPATH= cd "$(dirname "$0")" && pwd)"
+DOTFILES_DIR="$(CDPATH= cd "${SCRIPT_DIR}/.." && pwd)"
 TEMPLATE_DIR="${DOTFILES_DIR}/project-template"
 DEST_DIR="$(pwd)/${PROJECT_NAME}"
 PLACEHOLDER="__PROJECT_NAME__"

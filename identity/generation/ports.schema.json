@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "DotfilesDevPorts",
-  "description": "Structured ports object written into this repo and into every generated monorepo as config/ports.json. Schema property defaults fill missing keys. Runtime overrides use dotenv (.env gitignored, .env.example committed). Do not fall back to an example JSON file.",
+  "description": "Structured ports object written into this repo and into every generated monorepo as config/ports.json. Schema property defaults fill missing keys. Intended runtime overrides use dotenv (.env gitignored, .env.example committed); generated Vite/Express do not load this file yet. Do not fall back to an example JSON file.",
   "type": "object",
   "additionalProperties": false,
   "required": ["web", "api"],
