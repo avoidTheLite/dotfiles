@@ -52,6 +52,14 @@ pnpm exec turbo gen node_backend
 
 That generator installs the same shadcn registry into a new frontend. Do not re-run `dotfiles install` into a filled workspace unless they asked to overwrite (`--force`).
 
+### Compare two configurations (hypothesis test)
+
+When they want to measure a change (two models, two prompt iterations, two commits) for quality, speed, or tokens:
+
+1. Read [identity/generation/DEV_LOOPS.md](identity/generation/DEV_LOOPS.md) (Comparison runs).
+2. Default: two **full-tree** git SHAs, one committed scenario, no overlays. Schema: [identity/generation/comparison-run.schema.json](identity/generation/comparison-run.schema.json).
+3. Do not invent a second eval tool. Do not run fan/overlay unless they asked and flagged paths. CI does not spend tokens.
+
 ## Other skills
 
 | Request | Skill |

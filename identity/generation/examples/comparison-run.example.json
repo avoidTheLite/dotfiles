@@ -1,0 +1,17 @@
+{
+  "comparisonId": "cmp-scaffold-demo-sha-pair",
+  "hypothesis": "Pinning the shadcn registry SHA reduces inspect drift without increasing tokens.",
+  "classifications": ["scaffold", "components"],
+  "scenarioId": "react-node-monorepo",
+  "model": "example-model",
+  "legs": [
+    {
+      "name": "baseline",
+      "treeSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "name": "candidate",
+      "treeSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ]
+}

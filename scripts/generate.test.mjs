@@ -55,6 +55,24 @@ test('committed ports file matches the ports schema defaults', () => {
   assert.equal(ports.bind, '127.0.0.1');
 });
 
+test('comparison-run example has two full-tree legs and no overlay', () => {
+  const generationDir = path.join(dotfilesRoot, 'identity', 'generation');
+  const schema = JSON.parse(
+    fs.readFileSync(path.join(generationDir, 'comparison-run.schema.json'), 'utf8'),
+  );
+  const example = JSON.parse(
+    fs.readFileSync(path.join(generationDir, 'examples', 'comparison-run.example.json'), 'utf8'),
+  );
+  for (const key of schema.required) {
+    assert.ok(key in example, `missing ${key}`);
+  }
+  assert.ok(example.legs.length >= 2);
+  for (const leg of example.legs) {
+    assert.ok(leg.treeSha);
+    assert.equal(leg.overlay, undefined);
+  }
+});
+
 test('validatePortsObject rejects unknown keys and bad ports', () => {
   const defaults = { web: 5173, api: 3000, bind: '127.0.0.1' };
   assert.throws(() => validatePortsObject({ web: 5173, api: 3000, extra: 1 }, defaults), /unknown keys/);

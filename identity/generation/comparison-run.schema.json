@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DotfilesComparisonRun",
+  "description": "One hypothesis, two or more legs. MVP is two full-tree git SHAs. Optional overlay lets a later fan mode swap flagged files without a new product. Metrics are written after the run; this schema is the record, not a runtime loader.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["comparisonId", "hypothesis", "classifications", "scenarioId", "legs"],
+  "properties": {
+    "comparisonId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable id for this experiment. All Pino lines and cache records for the legs share it."
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What the human thinks will improve (quality, latency, or tokens)."
+    },
+    "classifications": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["scaffold", "components", "prompt", "model", "context", "homelab"]
+      },
+      "description": "Tags for dashboard query and interview rollup."
+    },
+    "scenarioId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id of a committed scenario (for example react-node-monorepo)."
+    },
+    "model": {
+      "type": "string",
+      "description": "Default model for every leg unless a leg overrides."
+    },
+    "legs": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/leg" }
+    }
+  },
+  "$defs": {
+    "overlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fromSha", "paths"],
+      "description": "Exception: take these paths from another SHA. MVP omits this. Fan mode uses it to build four permutations.",
+      "properties": {
+        "fromSha": { "type": "string", "minLength": 7 },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Filled after the leg runs. Omit on the input fixture.",
+      "properties": {
+        "tokensIn": { "type": "integer", "minimum": 0 },
+        "tokensOut": { "type": "integer", "minimum": 0 },
+        "latencyMs": { "type": "integer", "minimum": 0 },
+        "inspectPass": { "type": "boolean" },
+        "outputManifestHash": { "type": "string" },
+        "cacheHit": { "type": "boolean" }
+      }
+    },
+    "leg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "treeSha"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "treeSha": {
+          "type": "string",
+          "minLength": 7,
+          "description": "Git commit used as the entire tree unless overlay is set."
+        },
+        "model": { "type": "string" },
+        "overlay": { "$ref": "#/$defs/overlay" },
+        "metrics": { "$ref": "#/$defs/metrics" }
+      }
+    }
+  }
+}

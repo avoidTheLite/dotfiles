@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.5.0",
-    "last_updated": "2026-09-09",
+    "version": "2.6.0",
+    "last_updated": "2026-09-10",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -332,7 +332,8 @@
         "scenario fixtures and golden inspect/compare",
         "config/ports.json plus dotenv (.env.example)",
         "Pino createLogger({ module })",
-        "PromptCache get/set keyed by sha256(prompt + git SHA + scenario)"
+        "PromptCache get/set keyed by sha256(prompt + git SHA + scenario)",
+        "comparison runs: two tree SHAs, Pino metrics, optional overlay later"
       ],
       "flows": {
         "ci_goldens": "GitHub Actions node:test against committed path+hash goldens. Ports file required. No LLM, Docker, or listen.",
@@ -353,6 +354,14 @@
         "gitignored": true,
         "ci": false,
         "alternate_backends": ["redis", "sqlite"]
+      },
+      "comparison_runs": {
+        "schema": "./identity/generation/comparison-run.schema.json",
+        "example": "./identity/generation/examples/comparison-run.example.json",
+        "mvp": "two full-tree git SHAs, same scenario, metrics tokens/latency/inspect",
+        "later": "optional overlay paths + four-permutation fan from the same record",
+        "ci": false,
+        "dashboard": "Pino fields comparisonId, classifications, tokensIn, tokensOut, latencyMs"
       }
     }
   },

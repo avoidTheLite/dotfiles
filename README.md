@@ -47,7 +47,7 @@ dotfiles/
 │   ├── workspace-standards.json # standards source of truth (JSON)
 │   ├── components/             # shadcn registry (ui primitives + molecules)
 │   ├── scaffolding/            # turbo/plop templates for monorepo generation
-│   └── generation/             # capability manifest, example JSON, dev-loop contract, ports schema
+│   └── generation/             # capability manifest, examples, dev-loop + comparison contracts
 ├── agent-skills/
 │   ├── skills/                 # reusable agent skills (SKILL.md)
 │   └── prompts/                # portable copies of those skills

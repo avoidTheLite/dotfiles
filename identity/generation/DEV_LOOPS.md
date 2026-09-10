@@ -34,6 +34,7 @@ Agents start at [AGENTS.md](../../AGENTS.md). Humans start at the root [README](
 | Pino wrapper | yes (`module`, `runId`, `scenarioId`) | JSON in CI; `pino-pretty` on a TTY |
 | Prompt files (skill + portable prompt) | format only | **agent loop only** |
 | Prompt cache (`PromptCache.get/set`) | **keying contract** | filesystem v1; Redis or SQLite later; never CI |
+| Comparison runs (two SHAs, metrics) | record schema + Pino fields | **homelab/agent only**; CI never spends tokens |
 | Docker images of web and/or api | Dockerfiles from templates later | **homelab only** (optional extra CI job later) |
 | GitHub Actions | `node --test` goldens + ports file check | not the agent; not the home server |
 
@@ -68,8 +69,8 @@ skill + scenario → generate → inspect → (drift? patch + re-run : stop)
 ```
 
 1. **Prompt adapter** loads `agent-skills/skills/scaffold-monorepo/SKILL.md` (and a new `generate-inspect-fix` skill when it exists), plus the scenario JSON. Portable copy stays under `agent-skills/prompts/` per existing skill layout.
-2. **Prompt cache** is a `get(key)` / `set(key, record)` store. The key is `sha256(prompt bytes + git SHA of this repo + canonical scenario JSON)` and does **not** encode the backend. Filesystem v1 writes `.dotfiles-cache/prompts/<key>.json` (gitignored). Redis is `GET`/`SET` of the same key; SQLite is a `key PRIMARY KEY` table. Swap the store, keep the hasher. Hits replay `{ prompt, inputs, outputManifest, logFile }`.
-3. **Pino adapter** wraps the CLI/harness. No `console.log` in new harness code. Child logger fields: `module` (`cli` / `inspect` / `prompt-cache`), `runId`, `scenarioId`, `cacheHit`. Local TTY may pipe through `pino-pretty`; CI stays raw JSON.
+2. **Prompt cache** is a `get(key)` / `set(key, record)` store. The key is `sha256(prompt bytes + git SHA of this repo + canonical scenario JSON)` and does **not** encode the backend. Filesystem v1 writes `.dotfiles-cache/prompts/<key>.json` (gitignored). Redis is `GET`/`SET` of the same key; SQLite is a `key PRIMARY KEY` table. Swap the store, keep the hasher. Hits replay `{ prompt, inputs, outputManifest, logFile }`. Comparison legs reuse this key (the SHA in the key is that leg’s `treeSha`).
+3. **Pino adapter** wraps the CLI/harness. No `console.log` in new harness code. Child logger fields: `module` (`cli` / `inspect` / `prompt-cache` / `compare`), `runId`, `scenarioId`, `cacheHit`, and for comparisons `comparisonId`, `leg`, `treeSha`, `tokensIn`, `tokensOut`, `latencyMs`, `classifications`. Local TTY may pipe through `pino-pretty`; CI stays raw JSON. Homelab dashboards (Grafana + Loki, per the server style guide) query those fields.
 4. Inspect uses the **same** compare as Flow 1. Drift is a structured log event plus a file list, not a prose dump.
 5. On drift, the agent edits templates or the scenario, then re-runs. It does not hand-write `apps/` or invent a parallel turbo/plop setup.
 
@@ -92,6 +93,48 @@ generate (or use an existing target)
 4. v1 LAN access is **published ports** on the home server (firewall + bind). Compose `ports:` is the forward.
 
 **Does not:** change golden files, call the prompt cache, or require GitHub-hosted runners to reach the LAN.
+
+## Comparison runs (MVP)
+
+**Goal:** prove a homelab or prompt change with numbers an interview can roll up: quality (inspect pass / golden drift), speed (`latencyMs`), token cost (`tokensIn` + `tokensOut`).
+
+The four-way “fan” (baseline vs candidate, each with or without flagged instruction files) is real, but it is an expansion of one record, not a second tool. MVP is two full-tree commits. Overlay/fan waits until two-SHA comparisons are boring.
+
+```text
+hypothesis + scenarioId + SHA_A + SHA_B
+  → two legs (entire tree each)
+  → same inspect as CI goldens
+  → Pino metrics on each leg
+  → one comparison record
+```
+
+1. **Default:** every file comes from `treeSha`. No overlays. Same scenario JSON. Same model unless a leg sets `model`.
+2. **Agent-operable:** a short prompt like “compare this SHA to main on the demo scaffold” is enough. The agent writes a fixture matching [comparison-run.schema.json](comparison-run.schema.json), runs both legs, fills `metrics`. It does not invent a parallel eval harness.
+3. **Classifications** (`scaffold`, `components`, `prompt`, `model`, `context`, `homelab`) are the dashboard dimensions. Query Loki by `classifications` + `scenarioId` + week. A project summary for an interview is a rollup of those queries, not a separate data path.
+4. **Global scenarios** (always re-run as the homelab grows) live under `identity/generation/examples/` now and `identity/generation/scenarios/` later. They stay committed. Run records and prompt bodies stay in `.dotfiles-cache/` (gitignored).
+5. **Not CI.** Token spend and model choice belong on the homelab, same split as the prompt cache.
+
+### Overlay and fan (later, same schema)
+
+When the change under test must not include test-only instruction edits (for example a misleading startup prompt needed to exercise a component-install path):
+
+Flag those paths. Optional `overlay: { fromSha, paths }` on a leg. Fan mode **derives four legs** from `{ shaA, shaB, overlaySha or shaA, paths }`:
+
+| Permutation | Tree | Flagged files |
+| --- | --- | --- |
+| 1 | SHA A entire | from A |
+| 2 | SHA A + overlay | from the test commit / overlay SHA |
+| 3 | SHA B entire | from B |
+| 4 | SHA B + overlay from A | from A |
+
+That isolates “did the code change help?” from “did we rewrite the instructions?”. Do not build fan until MVP two-SHA runs exist and the record shape has proven queryable.
+
+### Interview narrative (later)
+
+Pick a public org together, analyze a messy but real setup, and show a solution using this repo’s generator + comparison metrics. The harness does not pick the org. It only supplies tables: hypothesis, classification, delta tokens, delta latency, inspect pass.
+
+Schema: [comparison-run.schema.json](comparison-run.schema.json)  
+Example (fake SHAs): [examples/comparison-run.example.json](examples/comparison-run.example.json)
 
 ## Ports contract
 
@@ -134,3 +177,4 @@ set(key, record) -> void
 1. Golden manifests + `inspect` helper used by `scripts/generate.test.mjs`.
 2. Pino wrapper on the CLI/harness; `PromptCache` filesystem adapter (Redis/SQLite behind the same interface); `generate-inspect-fix` skill.
 3. Dockerfiles in scaffolding templates; homelab run script that reads dotenv then `config/ports.json`.
+4. Comparison MVP: two-SHA runs writing Pino metrics. Overlay/fan after that. Interview rollup from classifications, not a new store.
