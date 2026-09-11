@@ -35,7 +35,7 @@ jobs:
         run: node scripts/validate/branch-name.mjs
 
       - name: Core validation
-        run: node scripts/validate/manifest.mjs && node scripts/validate/internal-links.mjs
+        run: node scripts/validate/manifest.mjs && node scripts/validate/internal-links.mjs && node scripts/validate/ports.mjs
 
       - name: Changelog structure
         run: node scripts/validate/check-changelog.mjs

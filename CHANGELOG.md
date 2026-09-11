@@ -4,6 +4,10 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Added a comparison-run contract (`identity/generation/comparison-run.schema.json`): two full-tree git SHAs with Pino metrics (tokens, latency, inspect). `hypothesis` names which metrics the feature should impact. Eval-protocol pin (hold test instructions constant) is deferred until a run is actually confounded. Bumped workspace-standards to 2.6.1.
+- Added `AGENTS.md` as the agent entry point. Routes split **new application / service / product** (unnamed requests use `--example` as `demo` / `@demo`) from **existing repo** (shadcn `install-components`, or `turbo gen` for another app). `scripts/install.sh` and `scripts/init-project.sh` resolve the repo from the script path instead of hardcoding `~/dotfiles`.
+- Ports are a committed `config/ports.json` plus `.env.example` (intended dotenv override; generated Vite/API do not load it yet). CI runs `scripts/validate/ports.mjs`. Schema defaults are validated before use. `cd --` removed from POSIX install scripts. Validation error text says Node 22. Prompt cache is documented as `get`/`set` so Redis or SQLite can replace the filesystem store. Bumped workspace-standards to 2.5.0.
+- Documented three generation dev loops (CI goldens, agent generate-inspect-fix, homelab Docker + port forward) in `identity/generation/DEV_LOOPS.md`, including what is shared vs split. Gitignored `.dotfiles-cache/` for prompt replay.
 - Turned `identity/components` into a shadcn source registry (primitives in `ui/`, new molecular components in `molecules/`) with a root `registry.json` so installs can use `npx shadcn add avoidTheLite/dotfiles/<item>#<git-sha>`.
 - `dotfiles install-components`, `dotfiles install`, and turbo `frontend_app` now install UI files through `npx shadcn add` instead of copying source files, and they install molecules (Field, ConfirmDialog, EmptyState) alongside the primitives.
 - Removed the custom `.dotfiles-meta.json` component-library version files. Sync and install now follow shadcn/git SHA versioning.

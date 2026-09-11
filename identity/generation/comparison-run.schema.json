@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DotfilesComparisonRun",
+  "description": "Two or more full-tree git SHA legs on one scenario. Metrics are written after the run. This schema is the record, not a runtime loader. Eval-protocol pin (holding test instructions constant while the feature SHA varies) is out of scope until a real run is confounded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["comparisonId", "hypothesis", "classifications", "scenarioId", "legs"],
+  "properties": {
+    "comparisonId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable id for this experiment. All Pino lines and cache records for the legs share it."
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What metrics should be impacted by this feature (inspect pass, latency, tokens). Not a prediction of improvement."
+    },
+    "classifications": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["scaffold", "components", "prompt", "model", "context", "homelab"]
+      },
+      "description": "Tags for dashboard query and interview rollup."
+    },
+    "scenarioId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id of a committed scenario (for example react-node-monorepo)."
+    },
+    "model": {
+      "type": "string",
+      "description": "Default model for every leg unless a leg overrides."
+    },
+    "legs": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/leg" }
+    }
+  },
+  "$defs": {
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Filled after the leg runs. Omit on the input fixture.",
+      "properties": {
+        "tokensIn": { "type": "integer", "minimum": 0 },
+        "tokensOut": { "type": "integer", "minimum": 0 },
+        "latencyMs": { "type": "integer", "minimum": 0 },
+        "inspectPass": { "type": "boolean" },
+        "outputManifestHash": { "type": "string" },
+        "cacheHit": { "type": "boolean" }
+      }
+    },
+    "leg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "treeSha"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "treeSha": {
+          "type": "string",
+          "minLength": 7,
+          "description": "Git commit used as the entire tree."
+        },
+        "model": { "type": "string" },
+        "metrics": { "$ref": "#/$defs/metrics" }
+      }
+    }
+  }
+}

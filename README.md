@@ -2,6 +2,8 @@
 
 This repository is the single source of truth for your development environment across Windows (with WSL2), macOS, and Linux.
 
+**Agents start at [AGENTS.md](AGENTS.md).** Humans can stay on this README; every path below lives in the clone.
+
 Style and quality decisions live in
 `identity/workspace-standards.json`. The [CHANGELOG](CHANGELOG.md) is the
 running, plain-language log of what changed; CI enforces that it stays in sync with standards and validation
@@ -9,7 +11,7 @@ edits.
 
 ## Continuous integration
 
-From the repository root, with **Node 20+** and **git** available:
+From the repository root, with **Node 22** and **git** available:
 
 ```sh
 bash scripts/validate.sh
@@ -21,21 +23,31 @@ script: install with [pre-commit](https://pre-commit.com) and `pre-commit instal
 in CI via [config/branch-standards.json](config/branch-standards.json) — copy and edit that file in other
 repos to set your own pattern.
 
+Generation, agent inspect-fix, and homelab Docker share one generator kernel. Install and generate run
+dev-loop validation (ports file, generator tests) so the output is checkable;
+[identity/generation/DEV_LOOPS.md](identity/generation/DEV_LOOPS.md) is the contract. Ports live in
+[config/ports.json](config/ports.json) (`web=5173`, `api=3000`, `bind=127.0.0.1`).
+[.env.example](.env.example) is the intended dotenv override (gitignored `.env`); generated Vite/Express
+do not read it yet.
+
 ## Repository layout
 
 ```text
 dotfiles/
+├── AGENTS.md                   # agent entry point (new app vs existing repo routes)
 ├── CHANGELOG.md
+├── .env.example                # intended dotenv overrides (not loaded by generated apps yet)
 ├── STYLE_GUIDE_JAVASCRIPT.md   # legacy style guide index
 ├── .github/
 │   └── workflows/validate.yml
 ├── config/
-│   └── branch-standards.json   # this repo’s branch name regex; copy per project
+│   ├── branch-standards.json   # this repo’s branch name regex; copy per project
+│   └── ports.json              # structured web/api ports (CI-validated)
 ├── identity/
 │   ├── workspace-standards.json # standards source of truth (JSON)
 │   ├── components/             # shadcn registry (ui primitives + molecules)
 │   ├── scaffolding/            # turbo/plop templates for monorepo generation
-│   └── generation/             # capability manifest + example JSON configs
+│   └── generation/             # capability manifest, examples, dev-loop + comparison contracts
 ├── agent-skills/
 │   ├── skills/                 # reusable agent skills (SKILL.md)
 │   └── prompts/                # portable copies of those skills
@@ -44,7 +56,7 @@ dotfiles/
 │   ├── init-project.sh
 │   ├── dotfiles                # CLI: install generators and render from JSON
 │   ├── validate.sh
-│   └── validate/               # node scripts (manifest, links, changelog, …)
+│   └── validate/               # node scripts (manifest, links, changelog, ports, …)
 ├── vscode/
 │   ├── settings.json
 │   └── extensions.txt
@@ -66,17 +78,22 @@ dotfiles/
 
 ## One-time machine setup
 
-1. Clone this repository to `~/dotfiles`.
-2. Run:
+1. Clone this repository (typical path `~/dotfiles`; any path works).
+2. Run the install script **from that clone**:
 
    ```sh
-   sh ~/dotfiles/scripts/install.sh
+   sh scripts/install.sh
    ```
+
+   Or `sh ~/dotfiles/scripts/install.sh` when the clone is at `~/dotfiles`. The script uses the directory it lives in, not a hardcoded home path.
 
 3. The script:
    - Detects `wsl`, `macos`, or `linux`
-   - Symlinks your editor settings file for VS Code and Cursor to `~/dotfiles/vscode/settings.json`
+   - Symlinks your editor settings file for VS Code and Cursor to `<clone>/vscode/settings.json`
+   - Symlinks the `dotfiles` CLI to `~/.local/bin/dotfiles` when possible
    - Is idempotent and reports `created`, `already-correct`, or `replaced`
+
+If `dotfiles` is not on `PATH`, run `<clone>/scripts/dotfiles` directly.
 
 ## Scaffold a new project
 
@@ -90,7 +107,7 @@ This creates `./my-project` from `~/dotfiles/project-template`, replaces `__PROJ
 
 ## Generate a React + Node monorepo
 
-Machine setup (`scripts/install.sh`) puts the `dotfiles` CLI on your PATH. From an empty directory, pass a JSON object of generator inputs:
+Machine setup (`scripts/install.sh`) puts the `dotfiles` CLI on your PATH. From this clone you can also run `scripts/dotfiles`. From an empty directory, pass a JSON object of generator inputs:
 
 ```sh
 mkdir my-app && cd my-app
@@ -98,6 +115,14 @@ dotfiles install --example --name my-app --scope @my-app
 pnpm install
 pnpm dev
 ```
+
+If no project name is given, `--example` uses [identity/generation/examples/react-node-monorepo.json](identity/generation/examples/react-node-monorepo.json) (`demo` / `@demo`):
+
+```sh
+scripts/dotfiles install /tmp/demo --example
+```
+
+That writes `config/ports.json` plus `.env.example` into the target. Agents route this from [AGENTS.md](AGENTS.md).
 
 Do not run `turbo install`. That uses a global Turbo binary (often an older 2.5.x) before dependencies exist, so you will see a missing lockfile and a missing `install` task. `pnpm install` creates the lockfile and installs the repo's Turbo 2.10.x; after that, use `pnpm exec turbo` or the root `pnpm` scripts.
 

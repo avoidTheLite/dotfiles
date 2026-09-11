@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.3.0",
-    "last_updated": "2026-09-04",
+    "version": "2.6.1",
+    "last_updated": "2026-09-11",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -324,6 +324,45 @@
     "scaffold_config": {
       "schema": "./identity/generation/scaffold-config.schema.json",
       "example": "./identity/generation/examples/react-node-monorepo.json"
+    },
+    "dev_loops": {
+      "plan": "./identity/generation/DEV_LOOPS.md",
+      "shared_kernel": [
+        "dotfiles install / installFromConfig",
+        "scenario fixtures and golden inspect/compare",
+        "config/ports.json plus dotenv (.env.example)",
+        "Pino createLogger({ module })",
+        "PromptCache get/set keyed by sha256(prompt + git SHA + scenario)",
+        "comparison runs: two tree SHAs, Pino metrics"
+      ],
+      "flows": {
+        "ci_goldens": "GitHub Actions node:test against committed path+hash goldens. Ports file required. No LLM, Docker, or listen.",
+        "agent_inspect_fix": "Skill + prompt adapter with PromptCache get/set (filesystem v1; Redis or SQLite later). Generate, inspect with the CI compare, patch, re-run.",
+        "homelab_docker": "Image the generated web and/or api. Publish ports from dotenv then config/ports.json then schema defaults."
+      },
+      "ports": {
+        "schema": "./identity/generation/ports.schema.json",
+        "file": "./config/ports.json",
+        "dotenv_example": "./.env.example",
+        "loader_order": ["WEB_PORT API_PORT BIND", "config/ports.json", "schema defaults"],
+        "ci": "scripts/validate/ports.mjs"
+      },
+      "prompt_cache": {
+        "interface": "get(key)/set(key, record)",
+        "key": "sha256(prompt bytes + git SHA + canonical scenario JSON)",
+        "filesystem": ".dotfiles-cache/",
+        "gitignored": true,
+        "ci": false,
+        "alternate_backends": ["redis", "sqlite"]
+      },
+      "comparison_runs": {
+        "schema": "./identity/generation/comparison-run.schema.json",
+        "example": "./identity/generation/examples/comparison-run.example.json",
+        "mvp": "two full-tree git SHAs, same scenario, metrics tokens/latency/inspect",
+        "later": "eval-protocol pin only if a run is confounded (hold test instructions constant while treatment SHA varies)",
+        "ci": false,
+        "dashboard": "Pino fields comparisonId, classifications, tokensIn, tokensOut, latencyMs"
+      }
     }
   },
   "uncategorized": {

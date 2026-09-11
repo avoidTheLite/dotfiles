@@ -21,10 +21,14 @@ plopfile.mjs         # re-exports the turbo generator config
 From an empty directory:
 
 ```sh
-dotfiles install --config ~/dotfiles/identity/generation/examples/react-node-monorepo.json --name my-app --scope @my-app
+dotfiles install --config identity/generation/examples/react-node-monorepo.json --name my-app --scope @my-app
 ```
 
+Or from this clone: `scripts/dotfiles install ./my-app --example`.
+
 That command copies these generators into the target (`turbo/generators/`) and renders a starter monorepo from the JSON object. Each frontend app installs the standard UI library through the shadcn registry (primitives at `src/components/ui/`, molecules at `src/components/molecules/`). After `pnpm install`, `pnpm exec turbo gen` can add another frontend or Node service using the same registry.
+
+Install and generate also write `config/ports.json` and `.env.example`, and CI validates those artifacts. The shared kernel (goldens, agent inspect-fix, homelab Docker) and what stays split is in [identity/generation/DEV_LOOPS.md](../generation/DEV_LOOPS.md).
 
 To install the library into an existing repo without generating a new monorepo:
 

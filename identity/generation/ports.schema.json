@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DotfilesDevPorts",
+  "description": "Structured ports object written into this repo and into every generated monorepo as config/ports.json. Schema property defaults fill missing keys. Intended runtime overrides use dotenv (.env gitignored, .env.example committed); generated Vite/Express do not load this file yet. Do not fall back to an example JSON file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["web", "api"],
+  "properties": {
+    "web": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 5173,
+      "description": "Host port published for the Vite frontend."
+    },
+    "api": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 3000,
+      "description": "Host port published for the Express API."
+    },
+    "bind": {
+      "type": "string",
+      "default": "127.0.0.1",
+      "description": "Host address for published ports. Default 127.0.0.1 (loopback only). Set BIND=0.0.0.0 in .env for LAN/homelab. Process listen inside a container is always 0.0.0.0; this field is the host publish address, not the container listen address."
+    }
+  }
+}

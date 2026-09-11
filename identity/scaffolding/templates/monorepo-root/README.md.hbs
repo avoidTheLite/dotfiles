@@ -16,7 +16,7 @@ pnpm install
 pnpm dev
 ```
 
-The web app proxies `/api` to the Node service on port 3000. Open http://localhost:5173.
+Ports for the homelab/docker loader are recorded in `config/ports.json` (copy `.env.example` to `.env` when that loader exists). Today Vite listens on **5173** and proxies `/api` to `http://localhost:3000`; the API reads `process.env.PORT` (default **3000**).
 
 After `pnpm install`, run Turborepo through pnpm so the local 2.10.x binary is used:
 
