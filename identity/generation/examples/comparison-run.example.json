@@ -1,6 +1,6 @@
 {
   "comparisonId": "cmp-scaffold-demo-sha-pair",
-  "hypothesis": "Pinning the shadcn registry SHA reduces inspect drift without increasing tokens.",
+  "hypothesis": "Inspect pass and token count for the demo scaffold should move. Latency is out of scope.",
   "classifications": ["scaffold", "components"],
   "scenarioId": "react-node-monorepo",
   "model": "example-model",

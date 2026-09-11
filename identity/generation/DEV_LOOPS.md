@@ -96,42 +96,35 @@ generate (or use an existing target)
 
 ## Comparison runs (MVP)
 
-**Goal:** prove a homelab or prompt change with numbers an interview can roll up: quality (inspect pass / golden drift), speed (`latencyMs`), token cost (`tokensIn` + `tokensOut`).
+**Goal:** numbers an interview can roll up: quality (inspect pass / golden drift), speed (`latencyMs`), token cost (`tokensIn` + `tokensOut`).
 
-The four-way “fan” (baseline vs candidate, each with or without flagged instruction files) is real, but it is an expansion of one record, not a second tool. MVP is two full-tree commits. Overlay/fan waits until two-SHA comparisons are boring.
+MVP is two full-tree commits on one scenario. Same inspect as CI goldens. Same model unless a leg sets `model`.
 
 ```text
-hypothesis + scenarioId + SHA_A + SHA_B
+hypothesis (metrics this feature should impact) + scenarioId + SHA_A + SHA_B
   → two legs (entire tree each)
-  → same inspect as CI goldens
+  → inspect
   → Pino metrics on each leg
   → one comparison record
 ```
 
-1. **Default:** every file comes from `treeSha`. No overlays. Same scenario JSON. Same model unless a leg sets `model`.
-2. **Agent-operable:** a short prompt like “compare this SHA to main on the demo scaffold” is enough. The agent writes a fixture matching [comparison-run.schema.json](comparison-run.schema.json), runs both legs, fills `metrics`. It does not invent a parallel eval harness.
+1. Every file comes from that leg’s `treeSha`.
+2. **Agent-operable:** “compare this SHA to main on the demo scaffold” is enough. The agent writes a fixture matching [comparison-run.schema.json](comparison-run.schema.json), runs both legs, fills `metrics`. It does not invent a parallel eval harness.
 3. **Classifications** (`scaffold`, `components`, `prompt`, `model`, `context`, `homelab`) are the dashboard dimensions. Query Loki by `classifications` + `scenarioId` + week. A project summary for an interview is a rollup of those queries, not a separate data path.
-4. **Global scenarios** (always re-run as the homelab grows) live under `identity/generation/examples/` now and `identity/generation/scenarios/` later. They stay committed. Run records and prompt bodies stay in `.dotfiles-cache/` (gitignored).
-5. **Not CI.** Token spend and model choice belong on the homelab, same split as the prompt cache.
+4. **Global scenarios** live under `identity/generation/examples/` now and `identity/generation/scenarios/` later. They stay committed. Run records stay in `.dotfiles-cache/` (gitignored).
+5. **Not CI.** Token spend belongs on the homelab, same split as the prompt cache.
 
-### Overlay and fan (later, same schema)
+`hypothesis` answers: **what metrics should be impacted by this feature** (inspect pass, tokens, latency). It is not a prediction that quality will improve.
 
-When the change under test must not include test-only instruction edits (for example a misleading startup prompt needed to exercise a component-install path):
+### Eval-protocol pin (deferred, do not schema it yet)
 
-Flag those paths. Optional `overlay: { fromSha, paths }` on a leg. Fan mode **derives four legs** from `{ shaA, shaB, overlaySha or shaA, paths }`:
+The use case is real, not generic: if you change the feature **and** the agent’s startup/test instructions in the same SHAs, the token/quality delta is confounded. That is a 2×2 factorial (**treatment SHA × eval protocol**), not a special “fan” product.
 
-| Permutation | Tree | Flagged files |
-| --- | --- | --- |
-| 1 | SHA A entire | from A |
-| 2 | SHA A + overlay | from the test commit / overlay SHA |
-| 3 | SHA B entire | from B |
-| 4 | SHA B + overlay from A | from A |
-
-That isolates “did the code change help?” from “did we rewrite the instructions?”. Do not build fan until MVP two-SHA runs exist and the record shape has proven queryable.
+MVP does **not** include this. Pin the protocol by using the same checkout instructions for both legs. If a future run is actually confounded, add **eval-protocol pin** then: hold flagged instruction files constant while `treeSha` varies. Until that happens, extra fields would only invite unused complexity.
 
 ### Interview narrative (later)
 
-Pick a public org together, analyze a messy but real setup, and show a solution using this repo’s generator + comparison metrics. The harness does not pick the org. It only supplies tables: hypothesis, classification, delta tokens, delta latency, inspect pass.
+Pick a public org together, analyze a messy but real setup, and show a solution using this repo’s generator + comparison metrics. The harness does not pick the org. It only supplies tables: metric impact, classification, delta tokens, delta latency, inspect pass.
 
 Schema: [comparison-run.schema.json](comparison-run.schema.json)  
 Example (fake SHAs): [examples/comparison-run.example.json](examples/comparison-run.example.json)
@@ -177,4 +170,4 @@ set(key, record) -> void
 1. Golden manifests + `inspect` helper used by `scripts/generate.test.mjs`.
 2. Pino wrapper on the CLI/harness; `PromptCache` filesystem adapter (Redis/SQLite behind the same interface); `generate-inspect-fix` skill.
 3. Dockerfiles in scaffolding templates; homelab run script that reads dotenv then `config/ports.json`.
-4. Comparison MVP: two-SHA runs writing Pino metrics. Overlay/fan after that. Interview rollup from classifications, not a new store.
+4. Comparison MVP: two-SHA runs writing Pino metrics. Eval-protocol pin only if a real run is confounded. Interview rollup from classifications, not a new store.

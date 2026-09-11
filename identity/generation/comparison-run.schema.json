@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "DotfilesComparisonRun",
-  "description": "One hypothesis, two or more legs. MVP is two full-tree git SHAs. Optional overlay lets a later fan mode swap flagged files without a new product. Metrics are written after the run; this schema is the record, not a runtime loader.",
+  "description": "Two or more full-tree git SHA legs on one scenario. Metrics are written after the run. This schema is the record, not a runtime loader. Eval-protocol pin (holding test instructions constant while the feature SHA varies) is out of scope until a real run is confounded.",
   "type": "object",
   "additionalProperties": false,
   "required": ["comparisonId", "hypothesis", "classifications", "scenarioId", "legs"],
@@ -14,7 +14,7 @@
     "hypothesis": {
       "type": "string",
       "minLength": 1,
-      "description": "What the human thinks will improve (quality, latency, or tokens)."
+      "description": "What metrics should be impacted by this feature (inspect pass, latency, tokens). Not a prediction of improvement."
     },
     "classifications": {
       "type": "array",
@@ -42,20 +42,6 @@
     }
   },
   "$defs": {
-    "overlay": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["fromSha", "paths"],
-      "description": "Exception: take these paths from another SHA. MVP omits this. Fan mode uses it to build four permutations.",
-      "properties": {
-        "fromSha": { "type": "string", "minLength": 7 },
-        "paths": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
-        }
-      }
-    },
     "metrics": {
       "type": "object",
       "additionalProperties": false,
@@ -78,10 +64,9 @@
         "treeSha": {
           "type": "string",
           "minLength": 7,
-          "description": "Git commit used as the entire tree unless overlay is set."
+          "description": "Git commit used as the entire tree."
         },
         "model": { "type": "string" },
-        "overlay": { "$ref": "#/$defs/overlay" },
         "metrics": { "$ref": "#/$defs/metrics" }
       }
     }

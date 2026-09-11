@@ -55,7 +55,7 @@ test('committed ports file matches the ports schema defaults', () => {
   assert.equal(ports.bind, '127.0.0.1');
 });
 
-test('comparison-run example has two full-tree legs and no overlay', () => {
+test('comparison-run example has two full-tree legs', () => {
   const generationDir = path.join(dotfilesRoot, 'identity', 'generation');
   const schema = JSON.parse(
     fs.readFileSync(path.join(generationDir, 'comparison-run.schema.json'), 'utf8'),
@@ -67,10 +67,13 @@ test('comparison-run example has two full-tree legs and no overlay', () => {
     assert.ok(key in example, `missing ${key}`);
   }
   assert.ok(example.legs.length >= 2);
+  assert.equal(Object.hasOwn(schema.$defs, 'overlay'), false);
   for (const leg of example.legs) {
     assert.ok(leg.treeSha);
-    assert.equal(leg.overlay, undefined);
+    assert.equal(Object.hasOwn(leg, 'overlay'), false);
   }
+  assert.match(schema.properties.hypothesis.description, /metrics should be impacted/i);
+  assert.match(example.hypothesis, /should move|out of scope/i);
 });
 
 test('validatePortsObject rejects unknown keys and bad ports', () => {
