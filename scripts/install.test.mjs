@@ -9,16 +9,41 @@ import test from 'node:test';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dotfilesRoot = path.resolve(__dirname, '..');
 const installScript = path.join(dotfilesRoot, 'scripts', 'install.sh');
+const settingsPath = path.join(dotfilesRoot, 'vscode', 'settings.json');
 
-function runInstall(home) {
+function isolatedEnv(home, extraEnv = {}) {
+  const env = {
+    ...process.env,
+    HOME: home,
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_GLOBAL: path.join(home, '.gitconfig'),
+    XDG_CONFIG_HOME: path.join(home, '.config'),
+    ...extraEnv,
+  };
+  if (!Object.hasOwn(extraEnv, 'TERMUX_VERSION')) {
+    delete env.TERMUX_VERSION;
+  }
+  if (!Object.hasOwn(extraEnv, 'PREFIX')) {
+    delete env.PREFIX;
+  }
+  if (!Object.hasOwn(extraEnv, 'DOTFILES_PROFILE')) {
+    delete env.DOTFILES_PROFILE;
+  }
+  return env;
+}
+
+function runInstall(home, extraEnv = {}) {
   return execFileSync('sh', [installScript], {
     encoding: 'utf8',
-    env: {
-      ...process.env,
-      HOME: home,
-      GIT_CONFIG_NOSYSTEM: '1',
-    },
+    env: isolatedEnv(home, extraEnv),
   });
+}
+
+function gitConfig(home, args) {
+  return execFileSync('git', ['config', '--global', ...args], {
+    encoding: 'utf8',
+    env: isolatedEnv(home),
+  }).trim();
 }
 
 function makeHome() {
@@ -27,6 +52,10 @@ function makeHome() {
 
 function read(file) {
   return fs.readFileSync(file, 'utf8');
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 test('shared aliases stay portable (no macOS-only or WSL-only commands)', () => {
@@ -49,6 +78,7 @@ test('macOS aliases stay off the GNU/WSL files', () => {
   assert.doesNotMatch(wsl, /ls -G/);
   assert.match(linux, /--color=auto/);
   assert.match(wsl, /wslpath/);
+  assert.match(wsl, /clip\.exe failed/);
 });
 
 test('work vs home is a profile overlay, not an OS split', () => {
@@ -62,47 +92,33 @@ test('work vs home is a profile overlay, not an OS split', () => {
   assert.match(rc, /aliases\.macos/);
   assert.match(rc, /aliases\.linux/);
   assert.match(rc, /aliases\.wsl/);
+  assert.match(rc, /termux/);
 });
 
-test('machine install writes shell stub, rc hooks, and git include', () => {
+test('machine install writes replaceable hooks and git include', () => {
   const home = makeHome();
   const output = runInstall(home);
 
   assert.match(output, /detected os: linux/);
-  assert.match(output, /shell stub: created/);
-  assert.match(output, /zshrc hook: created/);
   assert.match(output, /bashrc hook: created/);
+  assert.match(output, /zshrc hook: created/);
   assert.match(output, /git include: created/);
 
-  const stub = read(path.join(home, '.config', 'dotfiles', 'rc'));
-  assert.match(stub, new RegExp(`DOTFILES_DIR="${dotfilesRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
-  assert.match(stub, /shell\/rc\.dotfiles/);
-
-  const zshrc = read(path.join(home, '.zshrc'));
   const bashrc = read(path.join(home, '.bashrc'));
-  assert.match(zshrc, /dotfiles: managed shell aliases/);
-  assert.match(bashrc, /dotfiles: managed shell aliases/);
-  assert.match(zshrc, /\.config\/dotfiles\/rc/);
-  assert.match(bashrc, /\.config\/dotfiles\/rc/);
+  const zshrc = read(path.join(home, '.zshrc'));
+  const quotedRoot = `'${dotfilesRoot.replace(/'/g, `'\\''`)}'`;
+  assert.match(bashrc, /# >>> dotfiles >>>/);
+  assert.match(zshrc, /# >>> dotfiles >>>/);
+  assert.match(bashrc, new RegExp(`DOTFILES_DIR=${escapeRegExp(quotedRoot)}`));
+  assert.match(bashrc, /shell\/aliases\.sh/);
+  assert.match(zshrc, /shell\/aliases\.sh/);
+  assert.equal(fs.existsSync(path.join(home, '.config', 'dotfiles', 'rc')), false);
 
-  const includePath = execFileSync('git', ['config', '--global', '--get', 'include.path'], {
-    encoding: 'utf8',
-    env: { ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1' },
-  }).trim();
-  assert.equal(includePath, path.join(dotfilesRoot, 'git', 'gitconfig.shared'));
+  assert.equal(gitConfig(home, ['--get', 'include.path']), path.join(dotfilesRoot, 'git', 'gitconfig.shared'));
+  assert.equal(gitConfig(home, ['--includes', '--get', 'alias.st']), 'status');
+  assert.match(gitConfig(home, ['--includes', '--get', 'alias.lg']), /oneline/);
 
-  const gitEnv = { ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1' };
-  const st = execFileSync('git', ['config', '--global', '--includes', '--get', 'alias.st'], {
-    encoding: 'utf8',
-    env: gitEnv,
-  }).trim();
-  assert.equal(st, 'status');
-
-  const lg = execFileSync('git', ['config', '--global', '--includes', '--get', 'alias.lg'], {
-    encoding: 'utf8',
-    env: gitEnv,
-  }).trim();
-  assert.match(lg, /oneline/);
+  assert.equal(fs.readlinkSync(path.join(home, '.config/Code/User/settings.json')), settingsPath);
 });
 
 test('machine install is idempotent for shell hooks and git include', () => {
@@ -110,32 +126,59 @@ test('machine install is idempotent for shell hooks and git include', () => {
   runInstall(home);
   const second = runInstall(home);
 
-  assert.match(second, /shell stub: already-correct/);
-  assert.match(second, /zshrc hook: already-correct/);
   assert.match(second, /bashrc hook: already-correct/);
+  assert.match(second, /zshrc hook: already-correct/);
   assert.match(second, /git include: already-correct/);
 
-  const zshrc = read(path.join(home, '.zshrc'));
-  const markerHits = zshrc.split('dotfiles: managed shell aliases').length - 1;
-  assert.equal(markerHits, 1);
+  const bashrc = read(path.join(home, '.bashrc'));
+  assert.equal(bashrc.split('# >>> dotfiles >>>').length - 1, 1);
+});
+
+test('stale hook marker is rewritten so aliases still load', () => {
+  const home = makeHome();
+  fs.writeFileSync(path.join(home, '.bashrc'), '# >>> dotfiles >>>\n# leftover without a source line\n');
+  const output = runInstall(home);
+  assert.match(output, /bashrc hook: replaced/);
+  const bashrc = read(path.join(home, '.bashrc'));
+  assert.match(bashrc, /shell\/aliases\.sh/);
+  assert.doesNotMatch(bashrc, /leftover without a source line/);
+});
+
+test('moving the clone replaces the previous managed git include', () => {
+  const home = makeHome();
+  fs.writeFileSync(path.join(home, '.gitconfig'), '');
+  execFileSync('git', ['config', '--global', '--add', 'include.path', '/tmp/old-clone/git/gitconfig.shared'], {
+    env: isolatedEnv(home),
+  });
+  execFileSync('git', ['config', '--global', '--add', 'include.path', '/keep/other.gitconfig'], {
+    env: isolatedEnv(home),
+  });
+
+  runInstall(home);
+
+  const includes = gitConfig(home, ['--get-all', 'include.path']).split('\n');
+  assert.deepEqual(
+    includes.filter((line) => line.endsWith('/git/gitconfig.shared')),
+    [path.join(dotfilesRoot, 'git', 'gitconfig.shared')],
+  );
+  assert.ok(includes.includes('/keep/other.gitconfig'));
 });
 
 function bashProbe(home, extraEnv = {}) {
-  const env = { ...process.env, HOME: home, ...extraEnv };
-  if (!Object.hasOwn(extraEnv, 'DOTFILES_PROFILE')) {
-    delete env.DOTFILES_PROFILE;
-  }
   const script = `
-    . "$HOME/.config/dotfiles/rc"
+    . "$HOME/.bashrc"
     alias gst
     alias ll
     alias ls
     if alias work >/dev/null 2>&1; then echo WORK_PRESENT; else echo WORK_ABSENT; fi
   `;
-  return execFileSync('bash', ['-c', script], { encoding: 'utf8', env });
+  return execFileSync('bash', ['-c', script], {
+    encoding: 'utf8',
+    env: isolatedEnv(home, extraEnv),
+  });
 }
 
-test('sourced rc loads shared + linux aliases, and work profile on demand', () => {
+test('sourced aliases.sh loads shared + linux aliases, and work profile on demand', () => {
   const home = makeHome();
   runInstall(home);
 
@@ -148,9 +191,33 @@ test('sourced rc loads shared + linux aliases, and work profile on demand', () =
   const withProfile = bashProbe(home, { DOTFILES_PROFILE: 'work' });
   assert.match(withProfile, /WORK_PRESENT/);
 
+  fs.mkdirSync(path.join(home, '.config', 'dotfiles'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'dotfiles', 'profile'), 'work\n');
   const fromFile = bashProbe(home);
   assert.match(fromFile, /WORK_PRESENT/);
+});
+
+test('termux profile installs the shared hook and skips editor and CLI', () => {
+  const home = makeHome();
+  const output = runInstall(home, { TERMUX_VERSION: '0.119.0' });
+
+  assert.match(output, /detected os: termux/);
+  assert.match(output, /skipped editor and CLI/);
+  const bashrc = read(path.join(home, '.bashrc'));
+  assert.match(bashrc, /# >>> dotfiles >>>/);
+  assert.match(bashrc, /shell\/aliases\.sh/);
+  assert.match(bashrc, new RegExp(`DOTFILES_DIR=${escapeRegExp(`'${dotfilesRoot.replace(/'/g, `'\\''`)}'`)}`));
+  assert.equal(fs.existsSync(path.join(home, '.config/Code/User/settings.json')), false);
+  assert.equal(fs.existsSync(path.join(home, '.local/bin/dotfiles')), false);
+});
+
+test('termux is detected from PREFIX when TERMUX_VERSION is unset', () => {
+  const home = makeHome();
+  const output = runInstall(home, {
+    PREFIX: '/data/data/com.termux/files/usr',
+    TERMUX_VERSION: '',
+  });
+  assert.match(output, /detected os: termux/);
 });
 
 test('repo does not grow a competing root install.sh', () => {

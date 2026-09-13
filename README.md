@@ -58,6 +58,7 @@ dotfiles/
 │   ├── validate.sh
 │   └── validate/               # node scripts (manifest, links, changelog, ports, …)
 ├── shell/
+│   ├── aliases.sh              # hook entry; sources rc.dotfiles
 │   ├── rc.dotfiles             # bash/zsh router (shared + OS + optional profile)
 │   ├── aliases.shared
 │   ├── aliases.macos
@@ -98,14 +99,14 @@ dotfiles/
    Or `sh ~/dotfiles/scripts/install.sh` when the clone is at `~/dotfiles`. The script uses the directory it lives in, not a hardcoded home path.
 
 3. The script:
-   - Detects `wsl`, `macos`, or `linux`
-   - Symlinks your editor settings file for VS Code and Cursor to `<clone>/vscode/settings.json`
-   - Symlinks the `dotfiles` CLI to `~/.local/bin/dotfiles` when possible
-   - Writes `~/.config/dotfiles/rc` (pins this clone path) and appends a marked source line to `~/.zshrc` and `~/.bashrc` if missing
-   - Adds `include.path` in the user Git config for [`git/gitconfig.shared`](git/gitconfig.shared)
+   - Detects `wsl`, `macos`, `linux`, or `termux` (`TERMUX_VERSION` or a `com.termux` `$PREFIX`)
+   - Writes a replaceable `# >>> dotfiles >>>` hook in `~/.bashrc` and `~/.zshrc` that sources [`shell/aliases.sh`](shell/aliases.sh) (clone path is POSIX-quoted)
+   - Adds `include.path` in the user Git config for [`git/gitconfig.shared`](git/gitconfig.shared), replacing a previous managed include if you moved the clone
+   - On desktop: symlinks VS Code and Cursor settings to `<clone>/vscode/settings.json`, and the `dotfiles` CLI to `~/.local/bin/dotfiles` when possible
+   - On Termux: installs the same shell hook and skips editor and CLI links (`termux/termux.properties` is linked when that file exists)
    - Is idempotent and reports `created`, `already-correct`, or `replaced`
 
-   Shell aliases always load [`shell/aliases.shared`](shell/aliases.shared). OS-specific files (`aliases.macos`, `aliases.linux`, `aliases.wsl`) load from `uname` / WSL detection — work vs home is **not** inferred from the OS. To load [`shell/aliases.work`](shell/aliases.work) or [`shell/aliases.home`](shell/aliases.home), export `DOTFILES_PROFILE=work` (or `home`), or write that word to `~/.config/dotfiles/profile`. Reload the shell after install (`source ~/.zshrc` or `source ~/.bashrc`).
+   [`shell/aliases.sh`](shell/aliases.sh) always loads [`shell/aliases.shared`](shell/aliases.shared). OS-specific files (`aliases.macos`, `aliases.linux`, `aliases.wsl`) load from `uname` / WSL / Termux detection — work vs home is **not** inferred from the OS. To load [`shell/aliases.work`](shell/aliases.work) or [`shell/aliases.home`](shell/aliases.home), export `DOTFILES_PROFILE=work` (or `home`), or write that word to `~/.config/dotfiles/profile`. Reload the shell after install (`source ~/.zshrc` or `source ~/.bashrc`).
 
 If `dotfiles` is not on `PATH`, run `<clone>/scripts/dotfiles` directly.
 

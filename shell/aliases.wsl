@@ -18,6 +18,13 @@ winpath() {
   target="${1:-.}"
   abs_path="$(readlink -f "$target")"
   windows_path="$(wslpath -w "$abs_path")"
-  printf '%s' "${windows_path}" | clip.exe
+  if ! command -v clip.exe >/dev/null 2>&1; then
+    echo "error: clip.exe not found; Windows path is ${windows_path}" >&2
+    return 1
+  fi
+  if ! printf '%s' "${windows_path}" | clip.exe; then
+    echo "error: clip.exe failed; Windows path is ${windows_path}" >&2
+    return 1
+  fi
   echo "Windows path copied to clipboard: ${windows_path}"
 }

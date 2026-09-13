@@ -1,5 +1,5 @@
-# Managed shell router. Sourced from the stub written by scripts/install.sh.
-# Works in bash and zsh. Do not edit on the machine; change files under shell/.
+# Managed shell router. Sourced from shell/aliases.sh after scripts/install.sh
+# writes the # >>> dotfiles >>> hook. Works in bash and zsh.
 
 if [ -z "${DOTFILES_DIR:-}" ]; then
   return 0 2>/dev/null || true
@@ -13,6 +13,17 @@ dotfiles_source_if() {
 }
 
 dotfiles_detect_os() {
+  if [ -n "${TERMUX_VERSION:-}" ]; then
+    echo termux
+    return
+  fi
+  case "${PREFIX:-}" in
+    */com.termux/*)
+      echo termux
+      return
+      ;;
+  esac
+
   uname_s="$(uname -s 2>/dev/null || echo unknown)"
   case "${uname_s}" in
     Darwin)
@@ -38,7 +49,7 @@ case "${os_name}" in
   macos)
     dotfiles_source_if "${DOTFILES_DIR}/shell/aliases.macos"
     ;;
-  linux)
+  linux|termux)
     dotfiles_source_if "${DOTFILES_DIR}/shell/aliases.linux"
     ;;
   wsl)
