@@ -91,15 +91,16 @@ test('machine install writes shell stub, rc hooks, and git include', () => {
   }).trim();
   assert.equal(includePath, path.join(dotfilesRoot, 'git', 'gitconfig.shared'));
 
-  const st = execFileSync('git', ['config', '--global', '--get', 'alias.st'], {
+  const gitEnv = { ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1' };
+  const st = execFileSync('git', ['config', '--global', '--includes', '--get', 'alias.st'], {
     encoding: 'utf8',
-    env: { ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1' },
+    env: gitEnv,
   }).trim();
   assert.equal(st, 'status');
 
-  const lg = execFileSync('git', ['config', '--global', '--get', 'alias.lg'], {
+  const lg = execFileSync('git', ['config', '--global', '--includes', '--get', 'alias.lg'], {
     encoding: 'utf8',
-    env: { ...process.env, HOME: home, GIT_CONFIG_NOSYSTEM: '1' },
+    env: gitEnv,
   }).trim();
   assert.match(lg, /oneline/);
 });
