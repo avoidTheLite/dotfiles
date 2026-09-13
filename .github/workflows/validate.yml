@@ -52,7 +52,7 @@ jobs:
       - name: Scaffold generator
         run: node --test scripts/generate.test.mjs
 
-      - name: Machine install (shell + git aliases)
+      - name: Machine installer
         run: node --test scripts/install.test.mjs
 
       - name: Gitleaks

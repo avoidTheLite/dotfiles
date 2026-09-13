@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dotfilesRoot = path.resolve(__dirname, '..');
 const installScript = path.join(dotfilesRoot, 'scripts', 'install.sh');
 const settingsPath = path.join(dotfilesRoot, 'vscode', 'settings.json');
+const termuxPropertiesPath = path.join(dotfilesRoot, 'termux', 'termux.properties');
 
 function isolatedEnv(home, extraEnv = {}) {
   const env = {
@@ -119,6 +120,7 @@ test('machine install writes replaceable hooks and git include', () => {
   assert.match(gitConfig(home, ['--includes', '--get', 'alias.lg']), /oneline/);
 
   assert.equal(fs.readlinkSync(path.join(home, '.config/Code/User/settings.json')), settingsPath);
+  assert.equal(fs.existsSync(path.join(home, '.termux/termux.properties')), false);
 });
 
 test('machine install is idempotent for shell hooks and git include', () => {
@@ -203,6 +205,7 @@ test('termux profile installs the shared hook and skips editor and CLI', () => {
 
   assert.match(output, /detected os: termux/);
   assert.match(output, /skipped editor and CLI/);
+  assert.equal(fs.readlinkSync(path.join(home, '.termux/termux.properties')), termuxPropertiesPath);
   const bashrc = read(path.join(home, '.bashrc'));
   assert.match(bashrc, /# >>> dotfiles >>>/);
   assert.match(bashrc, /shell\/aliases\.sh/);
@@ -218,6 +221,21 @@ test('termux is detected from PREFIX when TERMUX_VERSION is unset', () => {
     TERMUX_VERSION: '',
   });
   assert.match(output, /detected os: termux/);
+  assert.equal(
+    fs.readlinkSync(path.join(home, '.termux/termux.properties')),
+    termuxPropertiesPath,
+  );
+});
+
+test('termux install is idempotent for properties and hooks', () => {
+  const home = makeHome();
+  runInstall(home, { TERMUX_VERSION: '0.119.0' });
+  const second = runInstall(home, { TERMUX_VERSION: '0.119.0' });
+
+  assert.match(second, /termux\.properties: already-correct/);
+  assert.match(second, /bashrc hook: already-correct/);
+  assert.equal(fs.readlinkSync(path.join(home, '.termux/termux.properties')), termuxPropertiesPath);
+  assert.equal(read(path.join(home, '.bashrc')).split('# >>> dotfiles >>>').length - 1, 1);
 });
 
 test('repo does not grow a competing root install.sh', () => {
