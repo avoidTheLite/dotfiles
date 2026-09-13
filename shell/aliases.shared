@@ -1,0 +1,17 @@
+# Portable aliases for macOS, Ubuntu/Linux, and WSL.
+# Sourced by shell/rc.dotfiles after machine setup (scripts/install.sh).
+
+# --- Git shortcuts ---
+alias gst="git status"
+alias gd="git diff"
+alias gco="git checkout"
+alias gl="git log --oneline --graph --decorate"
+
+# --- Navigation ---
+alias ..="cd .."
+alias ...="cd ../.."
+alias ll="ls -la"
+
+# --- Docker (Compose v2) ---
+alias dcup="docker compose up -d"
+alias dcdn="docker compose down"

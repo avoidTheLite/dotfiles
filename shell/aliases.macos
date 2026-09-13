@@ -1,0 +1,5 @@
+# macOS / BSD-only helpers. Sourced when uname is Darwin.
+
+# BSD ls: -G colors, -F classify, -h human sizes
+alias ls="ls -GFh"
+alias flush="dscacheutil -flushcache"

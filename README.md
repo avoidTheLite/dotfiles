@@ -57,6 +57,16 @@ dotfiles/
 │   ├── dotfiles                # CLI: install generators and render from JSON
 │   ├── validate.sh
 │   └── validate/               # node scripts (manifest, links, changelog, ports, …)
+├── shell/
+│   ├── rc.dotfiles             # bash/zsh router (shared + OS + optional profile)
+│   ├── aliases.shared
+│   ├── aliases.macos
+│   ├── aliases.linux
+│   ├── aliases.wsl
+│   ├── aliases.work            # optional; DOTFILES_PROFILE or ~/.config/dotfiles/profile
+│   └── aliases.home
+├── git/
+│   └── gitconfig.shared        # included from the user global gitconfig
 ├── vscode/
 │   ├── settings.json
 │   └── extensions.txt
@@ -91,7 +101,11 @@ dotfiles/
    - Detects `wsl`, `macos`, or `linux`
    - Symlinks your editor settings file for VS Code and Cursor to `<clone>/vscode/settings.json`
    - Symlinks the `dotfiles` CLI to `~/.local/bin/dotfiles` when possible
+   - Writes `~/.config/dotfiles/rc` (pins this clone path) and appends a marked source line to `~/.zshrc` and `~/.bashrc` if missing
+   - Adds `include.path` in the user Git config for [`git/gitconfig.shared`](git/gitconfig.shared)
    - Is idempotent and reports `created`, `already-correct`, or `replaced`
+
+   Shell aliases always load [`shell/aliases.shared`](shell/aliases.shared). OS-specific files (`aliases.macos`, `aliases.linux`, `aliases.wsl`) load from `uname` / WSL detection — work vs home is **not** inferred from the OS. To load [`shell/aliases.work`](shell/aliases.work) or [`shell/aliases.home`](shell/aliases.home), export `DOTFILES_PROFILE=work` (or `home`), or write that word to `~/.config/dotfiles/profile`. Reload the shell after install (`source ~/.zshrc` or `source ~/.bashrc`).
 
 If `dotfiles` is not on `PATH`, run `<clone>/scripts/dotfiles` directly.
 

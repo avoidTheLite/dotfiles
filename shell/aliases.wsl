@@ -1,0 +1,23 @@
+# Ubuntu WSL helpers. Sourced when Linux + Microsoft kernel is detected.
+# These commands require Windows interop (explorer.exe, wslpath, clip.exe).
+
+# GNU ls: --color is not valid on BSD ls
+alias ls="ls --color=auto -Fh"
+
+alias winhome="cd /mnt/c/Users"
+alias open="explorer.exe"
+alias winpwd='wslpath -w "$(pwd)"'
+
+# Jump to a copied Windows path string
+wincd() {
+  cd "$(wslpath "$1")"
+}
+
+# Convert any local file/folder to a Windows path and copy it to the clipboard
+winpath() {
+  target="${1:-.}"
+  abs_path="$(readlink -f "$target")"
+  windows_path="$(wslpath -w "$abs_path")"
+  printf '%s' "${windows_path}" | clip.exe
+  echo "Windows path copied to clipboard: ${windows_path}"
+}

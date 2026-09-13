@@ -1,0 +1,4 @@
+# Optional work / corporate overlay.
+# Loaded when DOTFILES_PROFILE=work, or when ~/.config/dotfiles/profile contains "work".
+
+alias work="cd ~/projects"

@@ -1,0 +1,3 @@
+# Optional personal / home overlay.
+# Loaded when DOTFILES_PROFILE=home, or when ~/.config/dotfiles/profile contains "home".
+# Keep personal jumps here. OS-specific tools live in aliases.macos, aliases.linux, and aliases.wsl.

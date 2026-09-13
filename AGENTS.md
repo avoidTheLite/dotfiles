@@ -71,7 +71,7 @@ Portable prompt copies: [agent-skills/prompts/](agent-skills/prompts/).
 
 ## This repo (dotfiles itself)
 
-- Machine editor/CLI symlinks: `sh scripts/install.sh` (uses the directory this script lives in).
+- Machine editor/CLI/shell/git setup: `sh scripts/install.sh` (uses the directory this script lives in). Links editor settings and the CLI, writes `~/.config/dotfiles/rc`, hooks `~/.zshrc` and `~/.bashrc`, and adds `git/gitconfig.shared` via `include.path`. Do not add a second root `install.sh`.
 - Validate: `bash scripts/validate.sh`.
 - Contract for CI goldens, agent inspect-fix, and homelab Docker: [identity/generation/DEV_LOOPS.md](identity/generation/DEV_LOOPS.md).
 - Ports: committed [config/ports.json](config/ports.json) (CI-validated). [.env.example](.env.example) is the intended dotenv override (gitignored `.env`); generated Vite/Express do not load it yet. Schema: [identity/generation/ports.schema.json](identity/generation/ports.schema.json).

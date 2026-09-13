@@ -1,0 +1,57 @@
+# Managed shell router. Sourced from the stub written by scripts/install.sh.
+# Works in bash and zsh. Do not edit on the machine; change files under shell/.
+
+if [ -z "${DOTFILES_DIR:-}" ]; then
+  return 0 2>/dev/null || true
+fi
+
+dotfiles_source_if() {
+  if [ -f "$1" ]; then
+    # shellcheck disable=SC1090
+    . "$1"
+  fi
+}
+
+dotfiles_detect_os() {
+  uname_s="$(uname -s 2>/dev/null || echo unknown)"
+  case "${uname_s}" in
+    Darwin)
+      echo macos
+      ;;
+    Linux)
+      if grep -qi "microsoft" /proc/version 2>/dev/null; then
+        echo wsl
+      else
+        echo linux
+      fi
+      ;;
+    *)
+      echo unknown
+      ;;
+  esac
+}
+
+dotfiles_source_if "${DOTFILES_DIR}/shell/aliases.shared"
+
+os_name="$(dotfiles_detect_os)"
+case "${os_name}" in
+  macos)
+    dotfiles_source_if "${DOTFILES_DIR}/shell/aliases.macos"
+    ;;
+  linux)
+    dotfiles_source_if "${DOTFILES_DIR}/shell/aliases.linux"
+    ;;
+  wsl)
+    dotfiles_source_if "${DOTFILES_DIR}/shell/aliases.wsl"
+    ;;
+esac
+
+profile="${DOTFILES_PROFILE:-}"
+if [ -z "${profile}" ] && [ -f "${HOME}/.config/dotfiles/profile" ]; then
+  profile="$(tr -d '[:space:]' < "${HOME}/.config/dotfiles/profile")"
+fi
+case "${profile}" in
+  work|home)
+    dotfiles_source_if "${DOTFILES_DIR}/shell/aliases.${profile}"
+    ;;
+esac

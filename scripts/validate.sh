@@ -21,6 +21,7 @@ node "$ROOT/scripts/validate/branch-name.mjs"
 node "$ROOT/scripts/validate/ports.mjs"
 npx --yes shadcn@latest registry validate "$ROOT/registry.json"
 node --test "$ROOT/scripts/generate.test.mjs"
+node --test "$ROOT/scripts/install.test.mjs"
 
 if command -v gitleaks &>/dev/null; then
   gitleaks detect --source . --config .gitleaks.toml --redact -v

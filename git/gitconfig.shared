@@ -1,0 +1,8 @@
+# Shared git aliases. Included from the user global config by scripts/install.sh
+# via: git config --global --add include.path <clone>/git/gitconfig.shared
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	df = diff
+	lg = log --oneline --graph --decorate
