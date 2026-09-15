@@ -160,6 +160,7 @@ test('installFromConfig renders a React + Express monorepo', () => {
   assert.ok(webPkg.dependencies['tailwind-merge']);
   assert.ok(fs.existsSync(path.join(targetDir, 'turbo/generators/registry/standard-ui.json')));
   assert.ok(fs.existsSync(path.join(targetDir, 'turbo/generators/lib/components.mjs')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'turbo/generators/lib/database.mjs')));
   const generatedPorts = JSON.parse(
     fs.readFileSync(path.join(targetDir, 'config', 'ports.json'), 'utf8'),
   );
@@ -170,6 +171,11 @@ test('installFromConfig renders a React + Express monorepo', () => {
   assert.match(envExample, /^WEB_PORT=5173$/m);
   assert.match(envExample, /^API_PORT=3000$/m);
   assert.match(envExample, /^BIND=127\.0\.0\.1$/m);
+  assert.match(envExample, /^LOG_LEVEL=info$/m);
+  assert.match(envExample, /^APP_ENV=development$/m);
+  assert.doesNotMatch(envExample, /^DATABASE_URL=/m);
+  assert.ok(!fs.existsSync(path.join(targetDir, 'packages/query-adapter')));
+  assert.ok(!apiPkg.dependencies.knex);
   const generatedGitignore = fs.readFileSync(path.join(targetDir, '.gitignore'), 'utf8');
   assert.match(generatedGitignore, /!\.env\.example/);
 });
@@ -386,3 +392,128 @@ test('generated turbo frontend installs from the copied shadcn registry', async 
   assert.ok(fs.existsSync(path.join(targetDir, 'apps/admin/src/components/molecules/Field.tsx')));
   assert.ok(fs.existsSync(path.join(targetDir, 'apps/admin/components.json')));
 });
+
+test('database config defaults postgres tests to sqlite-pg-proxy', () => {
+  const config = normalizeConfig({
+    projectName: 'acme',
+    apps: [
+      { type: 'frontend_app', name: 'web' },
+      { type: 'node_backend', name: 'api', database: true },
+    ],
+  });
+  assert.deepEqual(config.apps[1].database, {
+    dialect: 'postgres',
+    testStrategy: 'sqlite-pg-proxy',
+  });
+});
+
+test('rejects sqlite-pg-proxy when production dialect is sqlite', () => {
+  assert.throws(
+    () =>
+      normalizeConfig({
+        projectName: 'acme',
+        apps: [
+          {
+            type: 'node_backend',
+            name: 'api',
+            database: { dialect: 'sqlite', testStrategy: 'sqlite-pg-proxy' },
+          },
+        ],
+      }),
+    /sqlite-pg-proxy is only valid/,
+  );
+});
+
+test('rejects database on frontend apps', () => {
+  assert.throws(
+    () =>
+      normalizeConfig({
+        projectName: 'acme',
+        apps: [{ type: 'frontend_app', name: 'web', database: true }],
+      }),
+    /only valid on node_backend/,
+  );
+});
+
+test('installFromConfig with-db example adds query-adapter and knex overlay', () => {
+  const targetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-gen-db-'));
+  const examplePath = path.join(
+    dotfilesRoot,
+    'identity',
+    'generation',
+    'examples',
+    'react-node-monorepo-with-db.json',
+  );
+  const config = JSON.parse(fs.readFileSync(examplePath, 'utf8'));
+  installFromConfig({ targetDir, config, dotfilesRoot });
+
+  assert.ok(fs.existsSync(path.join(targetDir, 'packages/query-adapter/src/core/QueryGuard.ts')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'packages/query-adapter/src/core/errors.ts')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/api/src/db/client.ts')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/api/config/table-capacity-profile.json')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/api/migrations/0001_init.cjs')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/api/src/vitest.setup.ts')));
+
+  const apiPkg = JSON.parse(fs.readFileSync(path.join(targetDir, 'apps/api/package.json'), 'utf8'));
+  assert.equal(apiPkg.dependencies['@demo/query-adapter'], 'workspace:*');
+  assert.ok(apiPkg.dependencies.knex);
+  assert.ok(apiPkg.dependencies['better-sqlite3']);
+
+  const rootPkg = JSON.parse(fs.readFileSync(path.join(targetDir, 'package.json'), 'utf8'));
+  assert.ok(rootPkg.pnpm.onlyBuiltDependencies.includes('better-sqlite3'));
+
+  const envTs = fs.readFileSync(path.join(targetDir, 'apps/api/src/db/env.ts'), 'utf8');
+  assert.match(envTs, /dialect: 'postgres'/);
+  assert.match(envTs, /testStrategy: 'sqlite-pg-proxy'/);
+
+  const errors = fs.readFileSync(path.join(targetDir, 'packages/query-adapter/src/core/errors.ts'), 'utf8');
+  assert.match(errors, /QUERY_BOUNDS_EXCEEDED/);
+  assert.match(errors, /super\(QUERY_BOUNDS_EXCEEDED, 503\)/);
+
+  const envExample = fs.readFileSync(path.join(targetDir, '.env.example'), 'utf8');
+  assert.match(envExample, /^DATABASE_URL=file:\.\/tmp\/dev\.sqlite3$/m);
+
+  const leftovers = leftoverHandlebars(targetDir);
+  assert.deepEqual(leftovers, []);
+});
+
+test('generated turbo database overlay installs query-adapter', async () => {
+  const targetDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dotfiles-gen-db-turbo-'));
+  installFromConfig({
+    targetDir,
+    config: { projectName: 'demo' },
+    dotfilesRoot,
+  });
+
+  const generatedConfig = await import(pathToFileURL(path.join(targetDir, 'turbo/generators/config.js')));
+  const actionTypes = new Map();
+  const generators = new Map();
+  generatedConfig.default({
+    setActionType(name, action) {
+      actionTypes.set(name, action);
+    },
+    setGenerator(name, config) {
+      generators.set(name, config);
+    },
+  });
+
+  assert.ok(generators.has('database'));
+  const previousCwd = process.cwd();
+  process.chdir(targetDir);
+  try {
+    actionTypes.get('addDatabaseOverlay')({
+      name: 'api',
+      scope: '@demo',
+      projectName: 'demo',
+      dialect: 'postgres',
+    });
+  } finally {
+    process.chdir(previousCwd);
+  }
+
+  assert.ok(fs.existsSync(path.join(targetDir, 'packages/query-adapter/src/createQueryAdapter.ts')));
+  assert.ok(fs.existsSync(path.join(targetDir, 'apps/api/src/db/client.ts')));
+  const apiPkg = JSON.parse(fs.readFileSync(path.join(targetDir, 'apps/api/package.json'), 'utf8'));
+  assert.equal(apiPkg.dependencies['@demo/query-adapter'], 'workspace:*');
+});
+

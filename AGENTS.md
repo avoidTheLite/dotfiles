@@ -48,9 +48,10 @@ After `pnpm install` in a repo this CLI already generated:
 ```sh
 pnpm exec turbo gen frontend_app
 pnpm exec turbo gen node_backend
+pnpm exec turbo gen database
 ```
 
-That generator installs the same shadcn registry into a new frontend. Do not re-run `dotfiles install` into a filled workspace unless they asked to overwrite (`--force`).
+`database` adds `packages/query-adapter` and the Knex overlay to a named Node API. Do not re-run `dotfiles install` into a filled workspace unless they asked to overwrite (`--force`). Default `--example` does not include a database; set `database` on a `node_backend` app in the scaffold JSON when one is required.
 
 ### Compare two configurations
 

@@ -1,0 +1,19 @@
+import type { Knex } from 'knex';
+import { resolveKnexConfig } from '{{scope}}/query-adapter';
+
+const nodeEnv =
+  process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test'
+    ? process.env.NODE_ENV
+    : 'development';
+
+const config: Knex.Config = {
+  ...resolveKnexConfig({
+    productionDialect: '{{dialect}}' as const,
+    nodeEnv,
+    testStrategy: '{{testStrategy}}' as const,
+    connection: process.env.DATABASE_URL,
+  }),
+  migrations: { directory: './migrations' },
+};
+
+export default config;

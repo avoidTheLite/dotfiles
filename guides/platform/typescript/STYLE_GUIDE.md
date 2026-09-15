@@ -303,9 +303,17 @@
 
 ### Test Infrastructure
 
-- Setup/teardown runs Knex DB migrations and seeds before all tests; destroys
-  the connection after.
-- Database: PostgreSQL in production; SQLite3 in test environment.
+- When a service has a database, setup/teardown runs Knex DB migrations and
+  seeds before all tests, then destroys the connection.
+- **PostgreSQL in production.** When production is Postgres, **tests and local
+  dev default to SQLite as a Postgres proxy** (sqlite-pg-proxy): the runtime is
+  SQLite; cost estimates use the checked-in table capacity profile, not local
+  row counts. Override `database.testStrategy` to `postgres` or standalone
+  `sqlite` when needed.
+- Standalone SQLite (`SqliteCostStrategy`) is for services whose real database
+  is SQLite.
+- Tests that share database state run sequentially (`--runInBand` / Vitest
+  file parallelism off for that package).
 
 ---
 

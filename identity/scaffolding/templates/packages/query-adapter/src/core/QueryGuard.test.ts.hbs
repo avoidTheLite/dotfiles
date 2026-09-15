@@ -1,0 +1,80 @@
+import { describe, expect, it } from 'vitest';
+import { CapacityProfile } from './CapacityProfile.ts';
+import { QueryGuard } from './QueryGuard.ts';
+import { resolveGuardConfig } from './GuardConfig.ts';
+import { QUERY_BOUNDS_EXCEEDED, QueryTooExpensiveError } from './errors.ts';
+import type { CostEstimate, CostStrategy } from './types.ts';
+import type { QueryGuardLogEvent } from '../logging/events.ts';
+
+class FixedStrategy implements CostStrategy {
+  constructor(private readonly estimateValue: CostEstimate) {}
+
+  estimate(): Promise<CostEstimate> {
+    return Promise.resolve(this.estimateValue);
+  }
+}
+
+function estimate(overrides: Partial<CostEstimate> = {}): CostEstimate {
+  return {
+    estimatedRows: 10,
+    riskSignal: 'indexed',
+    explainDurationMs: 0.5,
+    raw: { plan: 'secret' },
+    ...overrides,
+  };
+}
+
+describe('QueryGuard', () => {
+  it('always logs an estimate and allows the query when enforce is off', async () => {
+    const events: QueryGuardLogEvent[] = [];
+    const guard = new QueryGuard(
+      new FixedStrategy(estimate({ estimatedRows: 5_000_000 })),
+      resolveGuardConfig({ appEnv: 'production' }),
+      new CapacityProfile([], 'v1'),
+      (event) => {
+        events.push(event);
+      },
+      { dialect: 'postgres', service: 'api', appEnv: 'production' },
+    );
+
+    const result = await guard.check('select * from orders', []);
+    expect(result.allowed).toBe(true);
+    expect(events.map((event) => event.event)).toContain('query_cost_estimate');
+    expect(events.map((event) => event.event)).toContain('table_missing_from_capacity_profile');
+  });
+
+  it('throws QueryTooExpensiveError with a stable client message when enforce is on', async () => {
+    const guard = new QueryGuard(
+      new FixedStrategy(estimate({ estimatedRows: 5_000_000 })),
+      resolveGuardConfig({ appEnv: 'performance-testing' }),
+      new CapacityProfile([], 'v1'),
+      () => {},
+      { dialect: 'postgres', service: 'api', appEnv: 'performance-testing' },
+    );
+
+    await expect(guard.check('select * from orders', [])).rejects.toMatchObject({
+      message: QUERY_BOUNDS_EXCEEDED,
+      statusCode: 503,
+    });
+    await expect(guard.check('select * from orders', [])).rejects.toBeInstanceOf(QueryTooExpensiveError);
+  });
+
+  it('requires a bypass reason and still emits', async () => {
+    const events: QueryGuardLogEvent[] = [];
+    const guard = new QueryGuard(
+      new FixedStrategy(estimate({ estimatedRows: 5_000_000 })),
+      resolveGuardConfig({ appEnv: 'performance-testing' }),
+      new CapacityProfile([], 'v1'),
+      (event) => {
+        events.push(event);
+      },
+      { dialect: 'postgres', service: 'api', appEnv: 'performance-testing' },
+    );
+
+    const result = await guard.check('select * from orders', [], {
+      guardBypass: { reason: 'TICKET-1 backfill' },
+    });
+    expect(result.allowed).toBe(true);
+    expect(events.some((event) => event.event === 'query_guard_bypassed')).toBe(true);
+  });
+});

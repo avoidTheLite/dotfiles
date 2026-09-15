@@ -41,10 +41,16 @@ const TEMPLATE_GENERATORS = {
     description: 'Express 5 TypeScript service with health and hello routes',
     destination: 'apps/{{name}}',
   },
+  'node-backend-db': {
+    id: 'node_backend_db',
+    status: 'available',
+    description: 'Optional Knex + query-adapter overlay for a Node API that declared database',
+    destination: 'apps/{{name}}',
+  },
   packages: {
     id: 'shared_package',
     status: 'available',
-    description: 'Shared workspace packages (tsconfig, types, util)',
+    description: 'Shared workspace packages (tsconfig, types, util, optional query-adapter)',
     destination: 'packages/{{packageName}}',
   },
   'python-backend': {

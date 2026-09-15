@@ -1,0 +1,30 @@
+export type {
+  AppEnv,
+  BypassReason,
+  CostEstimate,
+  CostStrategy,
+  CostStrategyName,
+  DriverKind,
+  GuardResult,
+  NodeEnv,
+  ProductionDialect,
+  QueryDialect,
+  QueryOptions,
+  RiskSignal,
+  RuntimeSelection,
+  SqlDriver,
+  TestStrategy,
+} from './core/types.ts';
+export { resolveRuntime } from './core/types.ts';
+export { CapacityProfile, loadCapacityProfile, UNKNOWN_TABLE_CEILING } from './core/CapacityProfile.ts';
+export { resolveGuardConfig, DEFAULT_ROW_THRESHOLD } from './core/GuardConfig.ts';
+export { QueryGuard } from './core/QueryGuard.ts';
+export { SqlQueryAdapter, type QueryAdapter } from './core/QueryAdapter.ts';
+export { QueryTooExpensiveError, QUERY_BOUNDS_EXCEEDED } from './core/errors.ts';
+export type { ParamValidator, ValidationResult } from './core/ParamValidator.ts';
+export { createQueryAdapter, loadAdapterCapacityProfile } from './createQueryAdapter.ts';
+export type { CreateQueryAdapterOptions } from './createQueryAdapter.ts';
+export { resolveKnexConfig, sqliteFilename } from './drivers/knex/knexConfig.ts';
+export { KnexDriver } from './drivers/knex/KnexDriver.ts';
+export { extractTables, queryId } from './core/sqlTables.ts';
+export type { QueryGuardLogEvent } from './logging/events.ts';

@@ -3,8 +3,8 @@
   "title": "WorkspaceStandards",
   "description": "Structured developer specifications for automated repository generation and AI agent constraint enforcement.",
   "metadata": {
-    "version": "2.6.1",
-    "last_updated": "2026-09-11",
+    "version": "2.7.0",
+    "last_updated": "2026-09-15",
     "owner": "Developer Persona"
   },
   "interaction_protocol": {
@@ -68,6 +68,7 @@
             "backend_service": "./identity/scaffolding/templates/python-backend",
             "shared_package": "./identity/scaffolding/templates/packages",
             "node_backend": "./identity/scaffolding/templates/node-backend",
+            "node_backend_db": "./identity/scaffolding/templates/node-backend-db",
             "monorepo_root": "./identity/scaffolding/templates/monorepo-root"
           },
           "default_backend_language": "node",
@@ -83,7 +84,8 @@
                 "render monorepo root (pnpm-workspace.yaml, turbo.json, root package.json, .npmrc, eslint, prettier)",
                 "render shared packages required by the config (tsconfig, types, util)",
                 "render apps from the JSON config (frontend_app, node_backend)",
-                "install identity/components via shadcn into each frontend (src/components/ui/ and src/components/molecules/)"
+                "install identity/components via shadcn into each frontend (src/components/ui/ and src/components/molecules/)",
+                "when a node_backend app sets database, also render packages/query-adapter and the Knex overlay (knexfile, migrations, capacity profile, vitest DB setup)"
               ],
               "does_not": [
                 "pnpm install",
@@ -135,8 +137,33 @@
             "routing_pattern": "One *Router.ts file per domain, mounted in app.ts under a path prefix.",
             "controllers_pattern": "Controllers are factory functions returning an object of handler methods.",
             "middleware_rules": "bodyParser.json() applied per-router, not globally. cors() applied globally. Request logging applied globally. errorHandler registered last.",
-            "logging_standard": "Structured JSON logs using Pino via a thin wrapper in @battleship/util. No console.log in application code. local development piped through pino-pretty.",
-            "error_handling": "No try/catch in route handlers. Express 5 auto-forwards thrown errors to errorHandler middleware. Custom error classes in @battleship/types extend AppError and carry a statusCode."
+            "logging_standard": "Structured JSON logs using Pino via createLogger({ module }) in the util package. ISO timestamps. correlationId from x-correlation-id or x-request-id (generated UUID otherwise), mixed into all logs in the request ALS. No console.log. Local dev piped through pino-pretty. QueryGuard events: query_cost_estimate, query_guard_tripped, query_guard_bypassed, approaching_design_capacity, table_missing_from_capacity_profile. HTTP responses never include EXPLAIN output, raw SQL, or row estimates.",
+            "error_handling": "No try/catch in route handlers. Express 5 auto-forwards thrown errors to errorHandler middleware. Custom error classes in the types package extend AppError and carry a statusCode. Operational 4xx logs at warn; operational 5xx and unexpected errors at error. QueryTooExpensiveError is 503 with the stable client message Query bounds exceeded; error logs include estimate fields without raw plan; debug logs include EXPLAIN/raw.",
+            "environment": {
+              "NODE_ENV": "development | test | production (Node process role)",
+              "APP_ENV": "development | staging | production | performance-testing (product/guard). QueryGuard enforce defaults false except APP_ENV=performance-testing, which is the reserved future pattern for hard gates. Optional QUERY_GUARD_ENFORCE override.",
+              "validation": "Zod-parse env at startup in config.ts. PORT, LOG_LEVEL, NODE_ENV, APP_ENV always. DATABASE_URL only when the app declared database."
+            },
+            "database_integration": {
+              "install": "Opt-in. Default --example does not include a database. Set database on a node_backend app (or turbo gen database later). Python FastAPI installer is planned and should ship the same analog once it exists.",
+              "query_adapter": "packages/query-adapter. Database-agnostic QueryAdapter/QueryGuard at the interface; dialect-specific CostStrategy. Postgres is a dialect, not an Express (or FastAPI) feature. Driver interface is swappable; knex is the only validated JavaScript driver today.",
+              "knex": "Migrations and seeds via Knex CLI. QueryAdapter.execute/explain go through the Driver (KnexDriver today). Do not open a second pool.",
+              "dialects": {
+                "postgres": "Production default. EXPLAIN (FORMAT JSON) for estimates. statement_timeout as an independent backstop.",
+                "sqlite": "Standalone SQLite when SQLite is the real database. EXPLAIN QUERY PLAN for riskSignal only (estimatedRows null).",
+                "sqlite-pg-proxy": "Default test and local-dev runtime when production dialect is postgres. SQLite engine plus capacity-profile estimates. Override database.testStrategy to postgres or sqlite.",
+                "duckdb": "Stub CostStrategy only until designed. Do not add a duckdb dependency yet."
+              },
+              "capacity_profile": "Checked-in apps/<api>/config/table-capacity-profile.json owned by the service. Seed as []. Unknown tables use UNKNOWN_TABLE_CEILING and emit table_missing_from_capacity_profile. Not a sync of live prod stats.",
+              "guard": {
+                "measure": "always (estimate + structured log)",
+                "enforce_default": false,
+                "enforce_performance_testing": "APP_ENV=performance-testing is the reserved future pattern for enforce true",
+                "bypass": "requires a reason string; no silent bypass",
+                "http": "QueryTooExpensiveError status 503, client message Query bounds exceeded"
+              },
+              "param_validator": "Future seam in front of QueryGuard (correctness vs cost). Not generated now."
+            }
           }
         }
     },
@@ -191,7 +218,7 @@
           "middleware_rules": "CORS, request/correlation ID, and body size limits applied deliberately.",
           "logging_standard": "Structured JSON logs using structlog or standard logging with JSON formatter. Log correlation fields (requestId, gameId) aligned with Node services.",
           "error_handling": "Single exception handler mapping exceptions to HTTP status codes and stable JSON error bodies. Operational vs unexpected error distinction.",
-          "database_integration": "SQLAlchemy 2.x with Alembic migrations. Postgres in production; SQLite in test. Setup/teardown runs migrations before tests and destroys connections after."
+          "database_integration": "SQLAlchemy 2.x with Alembic migrations is the first Python driver candidate (analogous to Knex on Node). Postgres in production; when production is Postgres, tests default to a SQLite-as-Postgres-proxy strategy with an optional override. QueryAdapter/QueryGuard are dialect-first and framework-agnostic; when the Python installer exists it must ship the same analogous components. Not generated in this pass."
         },
         "python_domain_stubs": {
           "python_ai_agents": "CrewAI / LangGraph with Pydantic models for tool/graph inputs and outputs, observability field alignment, and mock fixtures.",
@@ -271,8 +298,9 @@
       "generators": {
         "when": "after pnpm install",
         "command": "pnpm exec turbo gen",
-        "available": ["frontend_app", "node_backend"],
-        "frontend_app_installs": "copied shadcn registry at turbo/generators/registry"
+        "available": ["frontend_app", "node_backend", "database"],
+        "frontend_app_installs": "copied shadcn registry at turbo/generators/registry",
+        "database_installs": "packages/query-adapter plus Knex overlay on a named node_backend app"
       }
     },
     "components_registry": {
@@ -323,7 +351,8 @@
     },
     "scaffold_config": {
       "schema": "./identity/generation/scaffold-config.schema.json",
-      "example": "./identity/generation/examples/react-node-monorepo.json"
+      "example": "./identity/generation/examples/react-node-monorepo.json",
+      "with_database_example": "./identity/generation/examples/react-node-monorepo-with-db.json"
     },
     "dev_loops": {
       "plan": "./identity/generation/DEV_LOOPS.md",
@@ -331,7 +360,8 @@
         "dotfiles install / installFromConfig",
         "scenario fixtures and golden inspect/compare",
         "config/ports.json plus dotenv (.env.example)",
-        "Pino createLogger({ module })",
+        "Pino createLogger({ module }) with correlationId mixin and ISO timestamps",
+        "Opt-in packages/query-adapter (Knex driver, QueryGuard) when a node_backend declares database",
         "PromptCache get/set keyed by sha256(prompt + git SHA + scenario)",
         "comparison runs: two tree SHAs, Pino metrics"
       ],

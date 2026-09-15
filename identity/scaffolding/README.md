@@ -26,7 +26,7 @@ dotfiles install --config identity/generation/examples/react-node-monorepo.json 
 
 Or from this clone: `scripts/dotfiles install ./my-app --example`.
 
-That command copies these generators into the target (`turbo/generators/`) and renders a starter monorepo from the JSON object. Each frontend app installs the standard UI library through the shadcn registry (primitives at `src/components/ui/`, molecules at `src/components/molecules/`). After `pnpm install`, `pnpm exec turbo gen` can add another frontend or Node service using the same registry.
+That command copies these generators into the target (`turbo/generators/`) and renders a starter monorepo from the JSON object. Each frontend app installs the standard UI library through the shadcn registry (primitives at `src/components/ui/`, molecules at `src/components/molecules/`). After `pnpm install`, `pnpm exec turbo gen` can add another frontend, Node service, or `database` overlay. Default `--example` does not include a database; set `database` on a `node_backend` app to install `packages/query-adapter` and Knex.
 
 Install and generate also write `config/ports.json` and `.env.example`, and CI validates those artifacts. The shared kernel (goldens, agent inspect-fix, homelab Docker) and what stays split is in [identity/generation/DEV_LOOPS.md](../generation/DEV_LOOPS.md).
 

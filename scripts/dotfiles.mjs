@@ -42,6 +42,8 @@ Install copies turbo/plop generators into the target directory, then renders
 a monorepo from the JSON config (React app + Node service by default).
 Frontend apps receive the standard UI library through the shadcn registry
 (primitives under src/components/ui/ and molecules under src/components/molecules/).
+Set database on a node_backend app to also install packages/query-adapter
+and Knex (default --example stays database-free).
 
 Options:
   --config <path>   Path to a JSON object of generator inputs

@@ -33,6 +33,27 @@
           "name": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "database": {
+            "description": "Opt-in. When present, install packages/query-adapter and the Knex overlay. Default --example omits this. true is postgres + sqlite-pg-proxy tests.",
+            "anyOf": [
+              { "type": "boolean" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "dialect": {
+                    "type": "string",
+                    "enum": ["postgres", "sqlite"],
+                    "default": "postgres"
+                  },
+                  "testStrategy": {
+                    "type": "string",
+                    "enum": ["sqlite-pg-proxy", "sqlite", "postgres"]
+                  }
+                }
+              }
+            ]
           }
         }
       }

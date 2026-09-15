@@ -152,7 +152,7 @@ Do not run `turbo install`. That uses a global Turbo binary (often an older 2.5.
 dotfiles install ./my-app --config ./scaffold.json
 ```
 
-The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders a pnpm + Turborepo workspace with `apps/web` (React 18, Vite, Tailwind) and `apps/api` (Express 5). Each generated frontend installs the standard UI library through the shadcn registry: primitives at `src/components/ui/` and molecules at `src/components/molecules/`. After install, `pnpm exec turbo gen` adds another frontend or Node service using the same registry. See [identity/scaffolding/README.md](identity/scaffolding/README.md). Agents should follow [agent-skills/skills/scaffold-monorepo/SKILL.md](agent-skills/skills/scaffold-monorepo/SKILL.md) instead of writing a monorepo by hand.
+The CLI copies turbo/plop generators into the target (`turbo/generators/`) and renders a pnpm + Turborepo workspace with `apps/web` (React 18, Vite, Tailwind) and `apps/api` (Express 5). Each generated frontend installs the standard UI library through the shadcn registry: primitives at `src/components/ui/` and molecules at `src/components/molecules/`. After install, `pnpm exec turbo gen` adds another frontend, Node service, or `database` (Knex + query-adapter) using the same registry. Default `--example` has no database. See [identity/scaffolding/README.md](identity/scaffolding/README.md). Agents should follow [agent-skills/skills/scaffold-monorepo/SKILL.md](agent-skills/skills/scaffold-monorepo/SKILL.md) instead of writing a monorepo by hand.
 
 ## Install the UI component library into an existing repo
 

@@ -20,7 +20,7 @@ Use this skill when the user wants a **new** pnpm + Turborepo workspace with:
 Hand off instead of using this skill when (see [AGENTS.md](../../../AGENTS.md) routes):
 
 - They want **UI in an existing repo** → `scripts/dotfiles install-components` (shadcn registry)
-- They want to **add an app to an already generated repo** → after `pnpm install`, `pnpm exec turbo gen frontend_app` or `pnpm exec turbo gen node_backend`
+- They want to **add an app to an already generated repo** → after `pnpm install`, `pnpm exec turbo gen frontend_app`, `pnpm exec turbo gen node_backend`, or `pnpm exec turbo gen database`
 - They want a **single** non-monorepo folder → `scripts/init-project.sh`
 - They want a **Python FastAPI** service → say the `backend_service` generator is planned, not available
 
@@ -75,7 +75,7 @@ Default config:
 
 Rules the CLI will enforce:
 
-- `packages` must include **all three** shared packages (no subset, no duplicates)
+- `packages` must include **all three** shared packages (no subset, no duplicates). `query-adapter` is **not** listed here; the installer adds it when a `node_backend` app has `database`.
 - `description` may contain quotes; the CLI JSON-escapes it
 - Unknown app types (including Python) are rejected
 
@@ -130,21 +130,23 @@ After the first install, generators live in the generated repo:
 ```sh
 pnpm exec turbo gen frontend_app
 pnpm exec turbo gen node_backend
+pnpm exec turbo gen database
 ```
 
-Do not re-run `dotfiles install` into a filled workspace unless the user asks to overwrite (`--force`).
+Do not re-run `dotfiles install` into a filled workspace unless the user asks to overwrite (`--force`). Default `--example` has no database.
 
 ## Constraints
 
 - Do not scaffold by copying files out of `identity/scaffolding/templates/` yourself; the CLI renders Handlebars and installs generators.
 - Do not use `project-template/` for this fullstack layout.
-- Do not invent extra apps, databases, or Python services in the first generate.
+- Do not invent extra apps, databases, or Python services in the first generate unless they asked for a database. Then set `database` on the `node_backend` app (`dialect: "postgres"`, default `testStrategy: "sqlite-pg-proxy"`).
 - Follow `identity/workspace-standards.json` (pnpm + Turborepo, React 18, Express 5, Node 22).
 - Keep the generated tree; customize product code after `pnpm install` succeeds.
 
 ## References
 
 - `identity/generation/examples/react-node-monorepo.json`
+- `identity/generation/examples/react-node-monorepo-with-db.json`
 - `identity/generation/scaffold-config.schema.json`
 - `identity/generation/capability-manifest.json`
 - `identity/scaffolding/README.md`

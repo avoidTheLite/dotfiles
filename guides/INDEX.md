@@ -29,7 +29,7 @@ Read **[TypeScript (platform)](platform/typescript/STYLE_GUIDE.md)** and **[Pyth
 
 | Guide | Use when |
 |--------|-----------|
-| [TypeScript](server/typescript/STYLE_GUIDE.md) | **Standalone** `apps/api`, Express, Pino, errors, Zod env, Knex; **mutually exclusive** with Python server for the same HTTP surface |
+| [TypeScript](server/typescript/STYLE_GUIDE.md) | **Standalone** `apps/api`, Express, Pino, errors, Zod env, opt-in Knex + QueryAdapter/QueryGuard; **mutually exclusive** with Python server for the same HTTP surface |
 | [Python](server/python/STYLE_GUIDE.md) | **Standalone** FastAPI/server stack; **mutually exclusive** with TypeScript server for the same API; shared rules in [Python (platform)](platform/python/STYLE_GUIDE.md) |
 
 ## Client

@@ -131,12 +131,13 @@
 
 ## Database
 
-- Default story: **SQLAlchemy 2.x** with **Alembic** for migrations; **Postgres**
-  in production and **SQLite** (or isolated Postgres) in tests unless the
-  project documents otherwise.
+- Default story: **SQLAlchemy 2.x** with **Alembic** for migrations when the Python installer exists. SQLAlchemy is the first Python **driver** candidate, analogous to Knex on Node, not the query-adapter interface itself.
+- **QueryAdapter / QueryGuard are dialect-first and framework-agnostic.** Postgres (and later DuckDB, etc.) are dialects of that layer, not FastAPI features. When `backend_service` is generated, it must install the same analogous components the Node installer does: adapter, guard, capacity profile, and cost strategies.
+- **Postgres in production.** When production is Postgres, tests default to a **SQLite-as-Postgres-proxy** strategy (runtime SQLite, estimates from the declared capacity profile) with an optional override to real Postgres or standalone SQLite.
 - Mirror the **testing discipline** in
   [Python (platform) — Testing](../../platform/python/STYLE_GUIDE.md#testing):
   migrations, fixtures, and **serial** tests when tests share DB state.
+- This pass does **not** generate Python query-adapter code. Keep the seam so the Python installer can land the analog without redesigning dialects.
 
 ---
 

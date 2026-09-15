@@ -1,0 +1,36 @@
+import { fileURLToPath } from 'node:url';
+import knex, { type Knex } from 'knex';
+import {
+  createQueryAdapter,
+  loadCapacityProfile,
+  type QueryAdapter,
+} from '{{scope}}/query-adapter';
+import { env } from '../config.ts';
+import { dbEnv } from './env.ts';
+import knexfile from './knexfile.ts';
+
+let cachedKnex: Knex | undefined;
+let cachedAdapter: QueryAdapter | undefined;
+
+export function getKnex(): Knex {
+  cachedKnex ??= knex(knexfile);
+  return cachedKnex;
+}
+
+export function getQueryAdapter(): QueryAdapter {
+  cachedAdapter ??= createQueryAdapter({
+    productionDialect: dbEnv.dialect,
+    nodeEnv: env.NODE_ENV,
+    appEnv: env.APP_ENV,
+    testStrategy: dbEnv.testStrategy,
+    driver: 'knex',
+    knex: getKnex(),
+    service: env.PROJECT_NAME,
+    capacityProfile: loadCapacityProfile(
+      fileURLToPath(new URL('../../config/table-capacity-profile.json', import.meta.url)),
+    ),
+    guardConfig:
+      dbEnv.QUERY_GUARD_ENFORCE === undefined ? undefined : { enforce: dbEnv.QUERY_GUARD_ENFORCE },
+  });
+  return cachedAdapter;
+}

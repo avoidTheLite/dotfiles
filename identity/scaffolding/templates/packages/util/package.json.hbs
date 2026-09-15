@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"process.exit(0)\""
+    "test": "vitest run"
   },
   "dependencies": {
     "{{scope}}/types": "workspace:*",
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^22.20.1",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
   }
 }
