@@ -218,10 +218,12 @@ ensure_git_include "${GIT_SHARED}"
 
 case "${os_name}" in
   termux)
-    if [ -f "${TERMUX_PROPERTIES}" ]; then
-      link_file "${TERMUX_PROPERTIES}" "${HOME}/.termux/termux.properties" "termux.properties"
+    if [ ! -f "${TERMUX_PROPERTIES}" ]; then
+      echo "error: source termux properties not found at ${TERMUX_PROPERTIES}"
+      exit 1
     fi
-    echo "done: termux profile configured (shell hook; skipped editor and CLI)"
+    link_file "${TERMUX_PROPERTIES}" "${HOME}/.termux/termux.properties" "termux.properties"
+    echo "done: termux profile configured (shell hook + properties; skipped editor and CLI)"
     exit 0
     ;;
   wsl)
