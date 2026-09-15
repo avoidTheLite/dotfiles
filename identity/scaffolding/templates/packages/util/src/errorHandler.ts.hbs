@@ -1,8 +1,24 @@
 import type { ErrorRequestHandler } from 'express';
 import { AppError } from '{{scope}}/types';
 import { createLogger } from './logger.ts';
+import { getCorrelationId } from './requestContext.ts';
 
 const logger = createLogger({ module: 'errorHandler' });
+
+export function logLevelForStatus(statusCode: number, isOperational: boolean): 'warn' | 'error' {
+  if (!isOperational || statusCode >= 500) {
+    return 'error';
+  }
+  return 'warn';
+}
+
+function safeEstimate(value: unknown): unknown {
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  const { raw: _raw, ...rest } = value as { raw?: unknown };
+  return rest;
+}
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, next): void => {
   if (res.headersSent) {
@@ -10,13 +26,27 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next): void => 
     return;
   }
 
+  const correlationId = getCorrelationId() ?? req.header('x-correlation-id');
+
   if (err instanceof AppError) {
     const body = err.isOperational ? { error: err.message } : { error: 'Internal Server Error' };
-    logger.warn({ err, statusCode: err.statusCode, path: req.path }, err.message);
+    const level = logLevelForStatus(err.statusCode, err.isOperational);
+    const estimate = 'estimate' in err ? safeEstimate(err.estimate) : undefined;
+    const threshold = 'threshold' in err ? err.threshold : undefined;
+    logger[level](
+      { err, statusCode: err.statusCode, path: req.path, correlationId, estimate, threshold },
+      err.message,
+    );
+    if (level === 'error' && 'estimate' in err && err.estimate && typeof err.estimate === 'object') {
+      const raw = (err.estimate as { raw?: unknown }).raw;
+      if (raw !== undefined) {
+        logger.debug({ raw, correlationId }, 'query explain');
+      }
+    }
     res.status(err.statusCode).json(body);
     return;
   }
 
-  logger.error({ err, path: req.path }, 'unhandled error');
+  logger.error({ err, path: req.path, correlationId }, 'unhandled error');
   res.status(500).json({ error: 'Internal Server Error' });
 };

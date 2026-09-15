@@ -1,15 +1,32 @@
+import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from 'express';
 import { createLogger } from './logger.ts';
+import { requestContext } from './requestContext.ts';
 
 const logger = createLogger({ module: 'http' });
 
+function headerValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
 export const requestLogger: RequestHandler = (req, res, next): void => {
-  const start = Date.now();
-  res.on('finish', () => {
-    logger.info(
-      { method: req.method, path: req.path, status: res.statusCode, ms: Date.now() - start },
-      'request',
-    );
+  const correlationId =
+    headerValue(req.headers['x-correlation-id']) ??
+    headerValue(req.headers['x-request-id']) ??
+    randomUUID();
+  res.setHeader('x-correlation-id', correlationId);
+
+  requestContext.run({ correlationId }, () => {
+    const start = Date.now();
+    res.on('finish', () => {
+      logger.info(
+        { method: req.method, path: req.path, status: res.statusCode, ms: Date.now() - start },
+        'request',
+      );
+    });
+    next();
   });
-  next();
 };

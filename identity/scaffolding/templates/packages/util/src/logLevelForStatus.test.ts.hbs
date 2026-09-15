@@ -1,0 +1,17 @@
+import { describe, expect, it } from 'vitest';
+import { logLevelForStatus } from './errorHandler.ts';
+
+describe('logLevelForStatus', () => {
+  it('logs operational 4xx at warn', () => {
+    expect(logLevelForStatus(400, true)).toBe('warn');
+    expect(logLevelForStatus(404, true)).toBe('warn');
+  });
+
+  it('logs operational 5xx at error so query bounds trips are visible', () => {
+    expect(logLevelForStatus(503, true)).toBe('error');
+  });
+
+  it('logs non-operational errors at error', () => {
+    expect(logLevelForStatus(500, false)).toBe('error');
+  });
+});

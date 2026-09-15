@@ -1,0 +1,25 @@
+import type { Logger } from 'pino';
+import { createLogger, getCorrelationId } from '{{scope}}/util';
+import type { QueryGuardLogEvent } from './events.ts';
+
+export function createQueryGuardEmit(
+  service: string,
+  logger: Logger = createLogger({ module: 'query-guard' }),
+): (event: QueryGuardLogEvent, extras?: { raw?: unknown }) => void {
+  return (event, extras): void => {
+    const correlationId = event.correlationId ?? getCorrelationId();
+    const payload = { ...event, service, correlationId };
+    if (event.event === 'query_guard_tripped') {
+      logger.error(payload, QUERY_BOUNDS_LOG);
+    } else if (event.event === 'query_guard_bypassed' || event.event === 'table_missing_from_capacity_profile') {
+      logger.warn(payload, event.event);
+    } else {
+      logger.info(payload, event.event);
+    }
+    if (extras?.raw !== undefined) {
+      logger.debug({ raw: extras.raw, queryId: event.queryId, correlationId }, 'query explain');
+    }
+  };
+}
+
+const QUERY_BOUNDS_LOG = 'Query bounds exceeded';

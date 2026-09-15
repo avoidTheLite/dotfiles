@@ -8,6 +8,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { componentsSourceDir, installComponents, buildRegistry } from './components.mjs';
 import {
+  appendRuntimeEnvExample,
+  mergeApiDatabaseDependencies,
+  mergeRootNativeDeps,
+  normalizeDatabaseConfig,
+} from './database.mjs';
+import {
   loadAndValidateRepoPorts,
   schemaDefaultPorts,
   portsSchemaPath,
@@ -130,7 +136,7 @@ export function isEffectivelyEmpty(dir) {
  *   projectName: string,
  *   scope: string,
  *   description: string,
- *   apps: Array<{ type: string, name: string }>,
+ *   apps: Array<{ type: string, name: string, database: { dialect: string, testStrategy: string } | null }>,
  *   packages: string[],
  * }}
  */
@@ -177,6 +183,7 @@ export function normalizeConfig(raw) {
       throw new Error(`Duplicate app name "${item.name}"`);
     }
     seenNames.add(item.name);
+    normalizeDatabaseConfig(item.database, item.type);
   }
 
   const packages = normalizePackages(input.packages);
@@ -186,8 +193,12 @@ export function normalizeConfig(raw) {
     scope,
     description,
     apps: apps.map((app) => {
-      const item = /** @type {{ type: string, name: string }} */ (app);
-      return { type: item.type, name: item.name };
+      const item = /** @type {{ type: string, name: string, database?: unknown }} */ (app);
+      return {
+        type: item.type,
+        name: item.name,
+        database: normalizeDatabaseConfig(item.database, item.type),
+      };
     }),
     packages,
   };
@@ -261,13 +272,15 @@ export function transferGenerators({ targetDir, dotfilesRoot }) {
     throw new Error(`Turbo generator config not found: ${configSource}`);
   }
   fs.copyFileSync(configSource, path.join(destGenerators, 'config.js'));
-  const installerSource = path.join(dotfilesRoot, 'scripts', 'lib', 'components.mjs');
-  if (!fs.existsSync(installerSource)) {
-    throw new Error(`Component installer not found: ${installerSource}`);
-  }
   const destLib = path.join(destGenerators, 'lib');
   fs.mkdirSync(destLib, { recursive: true });
-  fs.copyFileSync(installerSource, path.join(destLib, 'components.mjs'));
+  for (const libName of ['components.mjs', 'database.mjs']) {
+    const installerSource = path.join(dotfilesRoot, 'scripts', 'lib', libName);
+    if (!fs.existsSync(installerSource)) {
+      throw new Error(`Installer lib not found: ${installerSource}`);
+    }
+    fs.copyFileSync(installerSource, path.join(destLib, libName));
+  }
   const plopSource = path.join(scaffoldingRoot, 'plopfile.mjs');
   if (fs.existsSync(plopSource)) {
     fs.copyFileSync(plopSource, path.join(targetDir, 'plopfile.mjs'));
@@ -327,6 +340,24 @@ export function installFromConfig({ targetDir, config, dotfilesRoot, force = fal
     );
   }
 
+  const databaseApps = normalized.apps.filter((app) => app.database !== null);
+  if (databaseApps.length > 0) {
+    created.push(
+      ...renderTemplateTree({
+        templateDir: path.join(templatesRoot, 'packages', 'query-adapter'),
+        destDir: path.join(targetDir, 'packages', 'query-adapter'),
+        data: { ...sharedData, name: 'query-adapter', packageName: 'query-adapter' },
+      }),
+    );
+    const rootPkgPath = path.join(targetDir, 'package.json');
+    const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf8'));
+    fs.writeFileSync(
+      rootPkgPath,
+      `${JSON.stringify(mergeRootNativeDeps(rootPkg), null, 2)}\n`,
+      'utf8',
+    );
+  }
+
   for (const app of normalized.apps) {
     const templateName = APP_TYPE_TO_TEMPLATE[app.type];
     created.push(
@@ -349,6 +380,28 @@ export function installFromConfig({ targetDir, config, dotfilesRoot, force = fal
       });
       created.push(...uiResult.files);
     }
+    if (app.database) {
+      created.push(
+        ...renderTemplateTree({
+          templateDir: path.join(templatesRoot, 'node-backend-db'),
+          destDir: path.join(targetDir, 'apps', app.name),
+          data: {
+            ...sharedData,
+            name: app.name,
+            appName: app.name,
+            dialect: app.database.dialect,
+            testStrategy: app.database.testStrategy,
+          },
+        }),
+      );
+      const apiPkgPath = path.join(targetDir, 'apps', app.name, 'package.json');
+      const apiPkg = JSON.parse(fs.readFileSync(apiPkgPath, 'utf8'));
+      fs.writeFileSync(
+        apiPkgPath,
+        `${JSON.stringify(mergeApiDatabaseDependencies(apiPkg, normalized.scope), null, 2)}\n`,
+        'utf8',
+      );
+    }
   }
 
   const schema = JSON.parse(fs.readFileSync(portsSchemaPath(dotfilesRoot), 'utf8'));
@@ -356,6 +409,14 @@ export function installFromConfig({ targetDir, config, dotfilesRoot, force = fal
     ? loadAndValidateRepoPorts(dotfilesRoot)
     : schemaDefaultPorts(schema);
   created.push(...writeGeneratedPorts({ targetDir, ports }));
+  const envPath = path.join(targetDir, '.env.example');
+  fs.writeFileSync(
+    envPath,
+    appendRuntimeEnvExample(fs.readFileSync(envPath, 'utf8'), {
+      hasDatabase: databaseApps.length > 0,
+    }),
+    'utf8',
+  );
 
   return { config: normalized, created };
 }

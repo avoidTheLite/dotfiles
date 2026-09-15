@@ -1,3 +1,5 @@
 export { createLogger } from './logger.ts';
-export { errorHandler } from './errorHandler.ts';
+export { errorHandler, logLevelForStatus } from './errorHandler.ts';
 export { requestLogger } from './requestLogger.ts';
+export { getCorrelationId, requestContext } from './requestContext.ts';
+export type { RequestContext } from './requestContext.ts';

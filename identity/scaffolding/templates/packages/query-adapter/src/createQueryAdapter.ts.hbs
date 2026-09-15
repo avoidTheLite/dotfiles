@@ -1,0 +1,101 @@
+import type { Knex } from 'knex';
+import type {
+  AppEnv,
+  CostStrategy,
+  CostStrategyName,
+  DriverKind,
+  NodeEnv,
+  ProductionDialect,
+  SqlDriver,
+  TestStrategy,
+} from './core/types.ts';
+import { resolveRuntime } from './core/types.ts';
+import { loadCapacityProfile, type CapacityProfile } from './core/CapacityProfile.ts';
+import { resolveGuardConfig, type GuardConfig } from './core/GuardConfig.ts';
+import { QueryGuard } from './core/QueryGuard.ts';
+import { SqlQueryAdapter, type QueryAdapter } from './core/QueryAdapter.ts';
+import { KnexDriver } from './drivers/knex/KnexDriver.ts';
+import { PostgresCostStrategy } from './dialects/postgres/PostgresCostStrategy.ts';
+import { SqliteCostStrategy } from './dialects/sqlite/SqliteCostStrategy.ts';
+import { SqlitePostgresProxyStrategy } from './dialects/sqlite/SqlitePostgresProxyStrategy.ts';
+import { DuckDBCostStrategy } from './dialects/duckdb/DuckDBCostStrategy.ts';
+import { createQueryGuardEmit } from './logging/pinoEmit.ts';
+
+export interface CreateQueryAdapterOptions {
+  productionDialect: ProductionDialect;
+  nodeEnv: NodeEnv;
+  appEnv: AppEnv;
+  testStrategy: TestStrategy;
+  driver?: DriverKind;
+  knex?: Knex;
+  driverInstance?: SqlDriver;
+  service: string;
+  capacityProfile: CapacityProfile;
+  guardConfig?: Partial<GuardConfig>;
+}
+
+const DRIVER_FACTORIES: Record<
+  DriverKind,
+  (opts: CreateQueryAdapterOptions, engine: ReturnType<typeof resolveRuntime>['engine']) => SqlDriver
+> = {
+  knex: (opts, engine) => {
+    if (opts.driverInstance) {
+      return opts.driverInstance;
+    }
+    if (!opts.knex) {
+      throw new Error('createQueryAdapter requires a knex instance when driver is "knex"');
+    }
+    return new KnexDriver(opts.knex, engine);
+  },
+};
+
+function createCostStrategy(
+  name: CostStrategyName,
+  driver: SqlDriver,
+  capacityProfile: CapacityProfile,
+): CostStrategy {
+  switch (name) {
+    case 'postgres':
+      return new PostgresCostStrategy(driver);
+    case 'sqlite':
+      return new SqliteCostStrategy(driver);
+    case 'sqlite-pg-proxy':
+      return new SqlitePostgresProxyStrategy(driver, capacityProfile);
+    case 'duckdb':
+      return new DuckDBCostStrategy();
+    default: {
+      const exhausted: never = name;
+      throw new Error(`Unsupported cost strategy: ${String(exhausted)}`);
+    }
+  }
+}
+
+export function createQueryAdapter(opts: CreateQueryAdapterOptions): QueryAdapter {
+  const driverKind = opts.driver ?? 'knex';
+  const factory = DRIVER_FACTORIES[driverKind];
+  if (!factory) {
+    throw new Error(
+      `Unsupported query adapter driver "${String(driverKind)}". Validated today: knex. Add a Driver factory to expand.`,
+    );
+  }
+  const runtime = resolveRuntime({
+    productionDialect: opts.productionDialect,
+    nodeEnv: opts.nodeEnv,
+    testStrategy: opts.testStrategy,
+  });
+  const driver = factory(opts, runtime.engine);
+  const capacityProfile = opts.capacityProfile;
+  const strategy = createCostStrategy(runtime.costStrategy, driver, capacityProfile);
+  const guard = new QueryGuard(
+    strategy,
+    resolveGuardConfig({ appEnv: opts.appEnv, serviceOverrides: opts.guardConfig }),
+    capacityProfile,
+    createQueryGuardEmit(opts.service),
+    { dialect: runtime.costStrategy, service: opts.service, appEnv: opts.appEnv },
+  );
+  return new SqlQueryAdapter(driver, guard);
+}
+
+export function loadAdapterCapacityProfile(profilePath: string | URL): CapacityProfile {
+  return loadCapacityProfile(profilePath);
+}

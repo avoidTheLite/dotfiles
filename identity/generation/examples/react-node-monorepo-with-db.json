@@ -1,0 +1,14 @@
+{
+  "projectName": "demo",
+  "scope": "@demo",
+  "description": "Generated React + Node monorepo with an opt-in Postgres API database",
+  "apps": [
+    { "type": "frontend_app", "name": "web" },
+    {
+      "type": "node_backend",
+      "name": "api",
+      "database": { "dialect": "postgres" }
+    }
+  ],
+  "packages": ["tsconfig", "types", "util"]
+}

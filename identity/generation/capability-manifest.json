@@ -29,9 +29,16 @@
       "destination": "apps/{{name}}"
     },
     {
+      "id": "node_backend_db",
+      "status": "available",
+      "description": "Optional Knex + query-adapter overlay for a Node API that declared database",
+      "source": "./identity/scaffolding/templates/node-backend-db",
+      "destination": "apps/{{name}}"
+    },
+    {
       "id": "shared_package",
       "status": "available",
-      "description": "Shared workspace packages (tsconfig, types, util)",
+      "description": "Shared workspace packages (tsconfig, types, util, optional query-adapter)",
       "source": "./identity/scaffolding/templates/packages",
       "destination": "packages/{{packageName}}"
     },

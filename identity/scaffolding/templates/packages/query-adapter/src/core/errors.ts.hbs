@@ -1,0 +1,15 @@
+import { AppError } from '{{scope}}/types';
+import type { CostEstimate } from './types.ts';
+
+export const QUERY_BOUNDS_EXCEEDED = 'Query bounds exceeded';
+
+export class QueryTooExpensiveError extends AppError {
+  public readonly estimate: CostEstimate;
+  public readonly threshold: number;
+
+  constructor(estimate: CostEstimate, threshold: number) {
+    super(QUERY_BOUNDS_EXCEEDED, 503);
+    this.estimate = estimate;
+    this.threshold = threshold;
+  }
+}

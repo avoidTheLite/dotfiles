@@ -1,0 +1,10 @@
+import { afterAll, beforeAll } from 'vitest';
+import { getKnex } from './db/client.ts';
+
+beforeAll(async () => {
+  await getKnex().migrate.latest();
+});
+
+afterAll(async () => {
+  await getKnex().destroy();
+});
