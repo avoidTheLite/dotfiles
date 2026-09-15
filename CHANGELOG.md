@@ -4,6 +4,7 @@ This file is a running log of what changed in this repository, in plain language
 
 ## Unreleased
 
+- Hardened `scripts/install.sh` hook repair for stale marker edge cases: orphan `# >>> dotfiles >>>` / `# <<< dotfiles <<<` lines are cleaned without truncating unrelated shell content, then a single managed hook block is re-added idempotently. Added installer coverage for this partial-marker case.
 - Machine setup (`scripts/install.sh`) now installs portable shell aliases and shared Git aliases. The hook is a replaceable `# >>> dotfiles >>>` block that POSIX-quotes the clone path and sources `shell/aliases.sh`. Shared shortcuts live in `shell/aliases.shared`; macOS / Linux / WSL helpers are separate so `ls -G` never lands on Ubuntu. Optional work/home overlays load from `DOTFILES_PROFILE` or `~/.config/dotfiles/profile`. Git aliases are included from `git/gitconfig.shared`, and a previous managed include is removed if the clone moves.
 - Termux is a thin profile of the same installer (`TERMUX_VERSION` or a `com.termux` `$PREFIX`): same shell hook, `termux/termux.properties` (margin-adjustment off for DeX flicker), no VS Code/Cursor or `dotfiles` CLI. Flicker notes live in `termux/display-flickering.md`.
 - Added a comparison-run contract (`identity/generation/comparison-run.schema.json`): two full-tree git SHAs with Pino metrics (tokens, latency, inspect). `hypothesis` names which metrics the feature should impact. Eval-protocol pin (hold test instructions constant) is deferred until a run is actually confounded. Bumped workspace-standards to 2.6.1.

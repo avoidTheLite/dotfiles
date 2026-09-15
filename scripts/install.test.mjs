@@ -136,14 +136,22 @@ test('machine install is idempotent for shell hooks and git include', () => {
   assert.equal(bashrc.split('# >>> dotfiles >>>').length - 1, 1);
 });
 
-test('stale hook marker is rewritten so aliases still load', () => {
+test('partial hook markers are repaired without dropping unrelated shell content', () => {
   const home = makeHome();
-  fs.writeFileSync(path.join(home, '.bashrc'), '# >>> dotfiles >>>\n# leftover without a source line\n');
+  fs.writeFileSync(
+    path.join(home, '.bashrc'),
+    'export KEEP=1\n# >>> dotfiles >>>\n# leftover without a source line\nexport AFTER=1\n',
+  );
   const output = runInstall(home);
   assert.match(output, /bashrc hook: replaced/);
   const bashrc = read(path.join(home, '.bashrc'));
+  assert.match(bashrc, /export KEEP=1/);
+  assert.match(bashrc, /export AFTER=1/);
   assert.match(bashrc, /shell\/aliases\.sh/);
-  assert.doesNotMatch(bashrc, /leftover without a source line/);
+  assert.equal(bashrc.split('# >>> dotfiles >>>').length - 1, 1);
+  assert.equal(bashrc.split('# <<< dotfiles <<<').length - 1, 1);
+  const second = runInstall(home);
+  assert.match(second, /bashrc hook: already-correct/);
 });
 
 test('moving the clone replaces the previous managed git include', () => {

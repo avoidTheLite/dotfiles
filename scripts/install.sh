@@ -104,13 +104,18 @@ write_hook_block() {
   hook_body="$(printf '%s\n' "${hook_body}")"
   had_block=0
 
-  if [ -f "${target_file}" ] && grep -Fq "${HOOK_BEGIN}" "${target_file}"; then
+  if [ -f "${target_file}" ] && grep -Fq "${HOOK_BEGIN}" "${target_file}" && grep -Fq "${HOOK_END}" "${target_file}"; then
     current_block="$(awk '/^# >>> dotfiles >>>$/,/^# <<< dotfiles <<<$/' "${target_file}")"
     if [ "${current_block}" = "${hook_body}" ]; then
       echo "${label}: already-correct (${target_file})"
       return
     fi
     sed '/^# >>> dotfiles >>>$/,/^# <<< dotfiles <<<$/d' "${target_file}" > "${target_file}.dotfiles.tmp"
+    mv "${target_file}.dotfiles.tmp" "${target_file}"
+    existed=1
+    had_block=1
+  elif [ -f "${target_file}" ] && (grep -Fq "${HOOK_BEGIN}" "${target_file}" || grep -Fq "${HOOK_END}" "${target_file}"); then
+    sed '/^# >>> dotfiles >>>$/d; /^# <<< dotfiles <<<$/d' "${target_file}" > "${target_file}.dotfiles.tmp"
     mv "${target_file}.dotfiles.tmp" "${target_file}"
     existed=1
     had_block=1
