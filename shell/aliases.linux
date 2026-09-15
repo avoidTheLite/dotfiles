@@ -1,0 +1,5 @@
+# GNU/Linux helpers (native Ubuntu and other Linux). Sourced when uname is Linux
+# and the kernel is not WSL.
+
+# GNU ls: --color is not valid on BSD ls
+alias ls="ls --color=auto -Fh"

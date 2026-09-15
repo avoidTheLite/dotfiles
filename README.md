@@ -1,6 +1,6 @@
 # Dotfiles
 
-This repository is the single source of truth for your development environment across Windows (with WSL2), macOS, and Linux.
+This repository is the single source of truth for your development environment across Windows (with WSL2), macOS, Linux, and a thin Termux profile on Android.
 
 **Agents start at [AGENTS.md](AGENTS.md).** Humans can stay on this README; every path below lives in the clone.
 
@@ -57,6 +57,20 @@ dotfiles/
 │   ├── dotfiles                # CLI: install generators and render from JSON
 │   ├── validate.sh
 │   └── validate/               # node scripts (manifest, links, changelog, ports, …)
+├── shell/
+│   ├── aliases.sh              # hook entry; sources rc.dotfiles
+│   ├── rc.dotfiles             # bash/zsh router (shared + OS + optional profile)
+│   ├── aliases.shared
+│   ├── aliases.macos
+│   ├── aliases.linux
+│   ├── aliases.wsl
+│   ├── aliases.work            # optional; DOTFILES_PROFILE or ~/.config/dotfiles/profile
+│   └── aliases.home
+├── git/
+│   └── gitconfig.shared        # included from the user global gitconfig
+├── termux/
+│   ├── termux.properties       # linked on Termux (DeX flicker workaround)
+│   └── display-flickering.md   # Samsung DeX / Termux flicker notes
 ├── vscode/
 │   ├── settings.json
 │   └── extensions.txt
@@ -88,10 +102,16 @@ dotfiles/
    Or `sh ~/dotfiles/scripts/install.sh` when the clone is at `~/dotfiles`. The script uses the directory it lives in, not a hardcoded home path.
 
 3. The script:
-   - Detects `wsl`, `macos`, or `linux`
-   - Symlinks your editor settings file for VS Code and Cursor to `<clone>/vscode/settings.json`
-   - Symlinks the `dotfiles` CLI to `~/.local/bin/dotfiles` when possible
+   - Detects `wsl`, `macos`, `linux`, or `termux` (`TERMUX_VERSION` or a `com.termux` `$PREFIX`)
+   - Writes a replaceable `# >>> dotfiles >>>` hook in `~/.bashrc` and `~/.zshrc` that sources [`shell/aliases.sh`](shell/aliases.sh) (clone path is POSIX-quoted)
+   - Adds `include.path` in the user Git config for [`git/gitconfig.shared`](git/gitconfig.shared), replacing a previous managed include if you moved the clone
+   - On desktop: symlinks VS Code and Cursor settings to `<clone>/vscode/settings.json`, and the `dotfiles` CLI to `~/.local/bin/dotfiles` when possible
+   - On Termux: installs the same shell hook, skips editor and CLI links, and symlinks [`termux/termux.properties`](termux/termux.properties) to `~/.termux/termux.properties`
    - Is idempotent and reports `created`, `already-correct`, or `replaced`
+
+   [`shell/aliases.sh`](shell/aliases.sh) always loads [`shell/aliases.shared`](shell/aliases.shared). OS-specific files (`aliases.macos`, `aliases.linux`, `aliases.wsl`) load from `uname` / WSL / Termux detection — work vs home is **not** inferred from the OS. To load [`shell/aliases.work`](shell/aliases.work) or [`shell/aliases.home`](shell/aliases.home), export `DOTFILES_PROFILE=work` (or `home`), or write that word to `~/.config/dotfiles/profile`. Reload the shell after install (`source ~/.zshrc` or `source ~/.bashrc`).
+
+On Termux, clone this repo and run the same command. Reload properties with `termux-reload-settings`. Flicker notes: [termux/display-flickering.md](termux/display-flickering.md).
 
 If `dotfiles` is not on `PATH`, run `<clone>/scripts/dotfiles` directly.
 

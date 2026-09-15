@@ -71,7 +71,7 @@ Portable prompt copies: [agent-skills/prompts/](agent-skills/prompts/).
 
 ## This repo (dotfiles itself)
 
-- Machine editor/CLI symlinks: `sh scripts/install.sh` (uses the directory this script lives in).
+- Machine editor/CLI/shell/git/Termux setup: `sh scripts/install.sh` (uses the directory this script lives in). Writes a `# >>> dotfiles >>>` hook that sources `shell/aliases.sh`, adds `git/gitconfig.shared` via `include.path`, and links editor settings plus the CLI on desktop. Termux is detected and skips editor and CLI; it also links `termux/termux.properties`. Do not add a second root `install.sh`.
 - Validate: `bash scripts/validate.sh`.
 - Contract for CI goldens, agent inspect-fix, and homelab Docker: [identity/generation/DEV_LOOPS.md](identity/generation/DEV_LOOPS.md).
 - Ports: committed [config/ports.json](config/ports.json) (CI-validated). [.env.example](.env.example) is the intended dotenv override (gitignored `.env`); generated Vite/Express do not load it yet. Schema: [identity/generation/ports.schema.json](identity/generation/ports.schema.json).

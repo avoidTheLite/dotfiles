@@ -52,6 +52,9 @@ jobs:
       - name: Scaffold generator
         run: node --test scripts/generate.test.mjs
 
+      - name: Machine installer
+        run: node --test scripts/install.test.mjs
+
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
