@@ -304,8 +304,11 @@ Pino's log levels, in order of severity:
 
   const envSchema = z.object({
     PORT: z.coerce.number().default(3000),
-    DATABASE_URL: z.string().url(),
+    // DATABASE_URL belongs in src/db/env.ts when the app declared database.
     NODE_ENV: z.enum(['development', 'production', 'test']),
+    APP_ENV: z
+      .enum(['development', 'staging', 'production', 'performance-testing'])
+      .default('development'),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
       .default('info'),
@@ -333,8 +336,17 @@ Pino's log levels, in order of severity:
 
 ### Database
 
-- Knex with PostgreSQL in production; SQLite3 in test environment.
-- Migrations and seeds managed via Knex CLI.
+- **Install is opt-in.** Generated `--example` APIs have no database. Add a `database` object on a `node_backend` app (or later `pnpm exec turbo gen database`) when the service needs one.
+- **Knex** is the only validated JavaScript **driver** today (migrations, seeds, execute/explain). The query adapter’s `Driver` interface is the expansion point for other drivers; do not open a second connection pool beside Knex.
+- **Dialects are independent of the HTTP framework.** Postgres is a dialect of `QueryAdapter` / `QueryGuard`, not an Express feature. The same dialect layer is what a future Python installer should wrap (SQLAlchemy as the first Python driver candidate).
+- **Production Postgres:** PostgreSQL in production. Local development and tests default to **SQLite as a Postgres proxy** (`sqlite-pg-proxy`): SQLite is the runtime engine, and cost estimates come from the checked-in table capacity profile, not from tiny local row counts. Override with `database.testStrategy` (`postgres` or standalone `sqlite`) when you need a real engine or SQLite-as-SQLite.
+- **Standalone SQLite:** use the sqlite dialect and `SqliteCostStrategy` only when SQLite *is* the production database.
+- **DuckDB:** stub `CostStrategy` only until it has its own design review. Do not add a DuckDB dependency yet.
+- **QueryGuard** always estimates and emits structured Pino events (`query_cost_estimate`, and trip/bypass/capacity events when they apply). Enforcement (`enforce: true`) defaults **off**, including production. `APP_ENV=performance-testing` is the reserved future pattern that defaults `enforce` on. Bypass requires a reason string.
+- **HTTP:** `QueryTooExpensiveError` is an operational `AppError` with **status 503** and the stable client message **`Query bounds exceeded`**. Do not put estimated row counts, SQL, bound parameters, or EXPLAIN output in the response. Error-level logs include estimate fields without `raw`; debug logs may include EXPLAIN/`raw`.
+- **Capacity profile:** `config/table-capacity-profile.json` in the service, owned by that team. Seed as `[]`. Missing tables use `UNKNOWN_TABLE_CEILING` and emit `table_missing_from_capacity_profile`. This is a declared design ceiling, not a sync of live production statistics.
+- **Env:** `NODE_ENV` is `development | test | production`. `APP_ENV` is `development | staging | production | performance-testing`. `DATABASE_URL` is required only when the app declared a database. `statement_timeout` is set on the Postgres connection as a backstop independent of the estimate.
+- Migrations and seeds are managed via the Knex CLI. Vitest `setupFiles` run migrations before tests and destroy the connection after. Tests that share DB state run sequentially.
 
 ---
 
